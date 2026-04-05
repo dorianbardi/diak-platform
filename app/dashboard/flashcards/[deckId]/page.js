@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -16,6 +16,9 @@ export default function DeckPage() {
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(true)
   const [flipped, setFlipped] = useState({})
+
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -62,6 +65,40 @@ export default function DeckPage() {
     fetchCards()
   }
 
+  async function generateWithAI() {
+  if (!aiTopic.trim()) return
+  setAiLoading(true)
+  try {
+    const res = await fetch('/api/generate-cards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: aiTopic, count: 10 }),
+    })
+    const data = await res.json()
+    
+    if (data.error) {
+      alert('Hiba: ' + data.error)
+      setAiLoading(false)
+      return
+    }
+
+    for (const card of data.cards) {
+      await supabase.from('flashcards').insert({
+        deck_id: deckId,
+        user_id: user.id,
+        question: card.question,
+        answer: card.answer,
+      })
+    }
+    setAiTopic('')
+    fetchCards()
+  } catch (e) {
+    console.error(e)
+    alert('Váratlan hiba történt!')
+  }
+  setAiLoading(false)
+}
+
   function toggleFlip(id) {
     setFlipped(prev => ({ ...prev, [id]: !prev[id] }))
   }
@@ -94,6 +131,29 @@ export default function DeckPage() {
             </button>
           </div>
         </div>
+
+{/* AI generálás */}
+<div className="bg-gray-900 border border-blue-800 rounded-2xl p-6 mb-6">
+  <h2 className="text-lg font-bold mb-1">🤖 AI kártyagenerálás</h2>
+  <p className="text-gray-400 text-sm mb-4">Írj be egy témát és az AI generál 10 kártyát automatikusan!</p>
+  <div className="flex gap-3">
+    <input
+      type="text"
+      placeholder="pl. Francia forradalom, Másodfokú egyenletek..."
+      value={aiTopic}
+      onChange={e => setAiTopic(e.target.value)}
+      className="flex-1 bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-blue-500"
+    />
+    <button
+      onClick={generateWithAI}
+      disabled={aiLoading}
+      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-3 rounded-xl font-medium transition"
+    >
+      {aiLoading ? '⏳ Generálás...' : '✨ Generálás'}
+    </button>
+  </div>
+</div>
+
 
         {/* Új kártya form */}
         {showForm && (
