@@ -16,62 +16,36 @@ export default function JegyekPage() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
 
-  useEffect(() => {
-    if (user) fetchGrades()
-  }, [user])
+  useEffect(() => { if (user) fetchGrades() }, [user])
 
   async function fetchGrades() {
-    const { data } = await supabase
-      .from('grades')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
+    const { data } = await supabase.from('grades').select('*').eq('user_id', user.id).order('date', { ascending: false })
     setGrades(data || [])
     setLoading(false)
   }
 
   async function addGrade() {
     if (!subject.trim()) return
-    await supabase.from('grades').insert({
-      user_id: user.id,
-      subject,
-      grade,
-      weight,
-      description,
-      date,
-    })
-    setSubject('')
-    setGrade(5)
-    setWeight(1)
-    setDescription('')
-    setDate(new Date().toISOString().split('T')[0])
-    setShowForm(false)
-    fetchGrades()
+    await supabase.from('grades').insert({ user_id: user.id, subject, grade, weight, description, date })
+    setSubject(''); setGrade(5); setWeight(1); setDescription(''); setDate(new Date().toISOString().split('T')[0]); setShowForm(false); fetchGrades()
   }
 
   async function deleteGrade(id) {
-    await supabase.from('grades').delete().eq('id', id)
-    fetchGrades()
+    await supabase.from('grades').delete().eq('id', id); fetchGrades()
   }
 
-  // Tantárgyak csoportosítása
   function groupBySubject() {
     const groups = {}
-    grades.forEach(g => {
-      if (!groups[g.subject]) groups[g.subject] = []
-      groups[g.subject].push(g)
-    })
+    grades.forEach(g => { if (!groups[g.subject]) groups[g.subject] = []; groups[g.subject].push(g) })
     return groups
   }
 
-  // Súlyozott átlag számítás
   function calcAverage(gradeList) {
     const totalWeight = gradeList.reduce((sum, g) => sum + g.weight, 0)
     const weighted = gradeList.reduce((sum, g) => sum + g.grade * g.weight, 0)
     return totalWeight > 0 ? (weighted / totalWeight).toFixed(2) : 0
   }
 
-  // Összes átlag
   function calcOverallAverage() {
     if (grades.length === 0) return 0
     const totalWeight = grades.reduce((sum, g) => sum + g.weight, 0)
@@ -80,160 +54,180 @@ export default function JegyekPage() {
   }
 
   function getGradeColor(avg) {
-    if (avg >= 4.5) return 'text-green-400'
-    if (avg >= 3.5) return 'text-blue-400'
-    if (avg >= 2.5) return 'text-yellow-400'
-    return 'text-red-400'
+    if (avg >= 4.5) return '#2dd4a0'
+    if (avg >= 3.5) return '#4f8eff'
+    if (avg >= 2.5) return '#f5c842'
+    return '#ff6b6b'
   }
 
-  function getGradeBg(grade) {
-    if (grade === 5) return 'bg-green-900 text-green-300'
-    if (grade === 4) return 'bg-blue-900 text-blue-300'
-    if (grade === 3) return 'bg-yellow-900 text-yellow-300'
-    if (grade === 2) return 'bg-orange-900 text-orange-300'
-    return 'bg-red-900 text-red-300'
+  function getGradeBadge(g) {
+    const colors = {
+      5: { color: '#2dd4a0', bg: 'rgba(45,212,160,0.12)', border: 'rgba(45,212,160,0.3)' },
+      4: { color: '#4f8eff', bg: 'rgba(79,142,255,0.12)', border: 'rgba(79,142,255,0.3)' },
+      3: { color: '#f5c842', bg: 'rgba(245,200,66,0.12)', border: 'rgba(245,200,66,0.3)' },
+      2: { color: '#ff9f43', bg: 'rgba(255,159,67,0.12)', border: 'rgba(255,159,67,0.3)' },
+      1: { color: '#ff6b6b', bg: 'rgba(255,107,107,0.12)', border: 'rgba(255,107,107,0.3)' },
+    }
+    return colors[g] || colors[1]
   }
 
   const groups = groupBySubject()
   const overall = calcOverallAverage()
+  const subjectCount = Object.keys(groups).length
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <div className="max-w-4xl mx-auto">
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <div className="orb orb-1" /><div className="orb orb-2" />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: `linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+
+      {/* Lebegő alakzatok */}
+      <div style={{ position: 'fixed', top: '15%', right: '5%', width: '70px', height: '70px', border: '1px solid rgba(245,200,66,0.15)', borderRadius: '16px', transform: 'rotate(20deg)', animation: 'float 7s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', bottom: '20%', left: '4%', width: '50px', height: '50px', border: '1px solid rgba(79,142,255,0.12)', borderRadius: '50%', animation: 'float 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', top: '55%', right: '6%', width: '40px', height: '40px', background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.15)', transform: 'rotate(45deg)', animation: 'float 8s ease-in-out infinite 1s', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', bottom: '40%', left: '3%', width: 0, height: 0, borderLeft: '22px solid transparent', borderRight: '22px solid transparent', borderBottom: '38px solid rgba(245,200,66,0.06)', animation: 'float 10s ease-in-out infinite 3s', pointerEvents: 'none', zIndex: 0 }} />
+
+      {/* Navbar */}
+      <nav style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 48px', height: '72px', background: 'rgba(8,11,20,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Link href="/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
+          <span style={{ color: 'var(--border)' }}>|</span>
+          <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px' }}>📊 Jegykövetés</span>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>
+          + Új jegy
+        </button>
+      </nav>
+
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: '60px 48px' }}>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white text-sm mb-1 block">← Vissza</Link>
-            <h1 className="text-3xl font-bold">📊 Jegyek</h1>
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-xl font-medium transition"
-          >
-            + Új jegy
-          </button>
+        <div className="animate-fade-up delay-1" style={{ marginBottom: '48px' }}>
+          <div style={{ fontSize: '12px', color: '#f5c842', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>✦ Eredmények</div>
+          <h1 style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(32px, 4vw, 52px)', letterSpacing: '-1.5px', marginBottom: '8px' }}>Jegykövetés</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>Súlyozott átlag, tantárgyankénti bontás.</p>
         </div>
 
-        {/* Összes átlag */}
+        {/* Összesítő kártyák */}
         {grades.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6 flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Összes átlag</p>
-              <p className={`text-5xl font-bold mt-1 ${getGradeColor(overall)}`}>{overall}</p>
+          <div className="animate-fade-up delay-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+
+            {/* Átlag */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '24px', padding: '32px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: `radial-gradient(circle, ${getGradeColor(overall)}22, transparent)` }} />
+              <div style={{ fontSize: '12px', color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>Összes átlag</div>
+              <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '56px', color: getGradeColor(overall), lineHeight: 1, letterSpacing: '-2px' }}>{overall}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>súlyozott átlag</div>
             </div>
-            <div className="text-right">
-              <p className="text-gray-400 text-sm">{grades.length} jegy</p>
-              <p className="text-gray-400 text-sm">{Object.keys(groups).length} tantárgy</p>
+
+            {/* Jegyek száma */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '24px', padding: '32px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,142,255,0.15), transparent)' }} />
+              <div style={{ fontSize: '12px', color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>Összes jegy</div>
+              <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '56px', color: '#4f8eff', lineHeight: 1, letterSpacing: '-2px' }}>{grades.length}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>beírt jegy</div>
+            </div>
+
+            {/* Tantárgyak */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '24px', padding: '32px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(155,109,255,0.15), transparent)' }} />
+              <div style={{ fontSize: '12px', color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>Tantárgyak</div>
+              <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '56px', color: '#9b6dff', lineHeight: 1, letterSpacing: '-2px' }}>{subjectCount}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>különböző tárgy</div>
             </div>
           </div>
         )}
 
         {/* Form */}
         {showForm && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-            <h2 className="text-lg font-bold mb-4">Új jegy hozzáadása</h2>
-            <input
-              type="text"
-              placeholder="Tantárgy (pl. Matematika)"
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              className="w-full bg-gray-800 rounded-xl px-4 py-3 mb-3 outline-none focus:ring-2 ring-yellow-500"
-            />
-            <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="animate-fade-up delay-1" style={{ background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.2)', borderRadius: '24px', padding: '36px', marginBottom: '32px' }}>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '18px', marginBottom: '20px' }}>Új jegy hozzáadása</h2>
+            <input className="input" placeholder="Tantárgy (pl. Matematika)" value={subject} onChange={e => setSubject(e.target.value)} style={{ marginBottom: '12px' }} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
-                <label className="text-gray-400 text-xs mb-1 block">Jegy</label>
-                <select
-                  value={grade}
-                  onChange={e => setGrade(Number(e.target.value))}
-                  className="w-full bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-yellow-500"
-                >
-                  {[5, 4, 3, 2, 1].map(g => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
+                <label style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px', display: 'block' }}>Jegy</label>
+                <select className="input" value={grade} onChange={e => setGrade(Number(e.target.value))}>
+                  {[5, 4, 3, 2, 1].map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-gray-400 text-xs mb-1 block">Súly</label>
-                <select
-                  value={weight}
-                  onChange={e => setWeight(Number(e.target.value))}
-                  className="w-full bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-yellow-500"
-                >
-                  {[0.5, 1, 1.5, 2, 3].map(w => (
-                    <option key={w} value={w}>{w}x</option>
-                  ))}
+                <label style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px', display: 'block' }}>Súly</label>
+                <select className="input" value={weight} onChange={e => setWeight(Number(e.target.value))}>
+                  {[0.5, 1, 1.5, 2, 3].map(w => <option key={w} value={w}>{w}x</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-gray-400 text-xs mb-1 block">Dátum</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={e => setDate(e.target.value)}
-                  className="w-full bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-yellow-500"
-                />
+                <label style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px', display: 'block' }}>Dátum</label>
+                <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} />
               </div>
             </div>
-            <input
-              type="text"
-              placeholder="Megjegyzés (pl. Témazáró)"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              className="w-full bg-gray-800 rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 ring-yellow-500"
-            />
-            <div className="flex gap-3">
-              <button onClick={addGrade} className="bg-yellow-600 hover:bg-yellow-700 px-6 py-2 rounded-xl font-medium transition">
-                Hozzáadás
-              </button>
-              <button onClick={() => setShowForm(false)} className="bg-gray-800 hover:bg-gray-700 px-6 py-2 rounded-xl font-medium transition">
-                Mégse
-              </button>
+            <input className="input" placeholder="Megjegyzés (pl. Témazáró)" value={description} onChange={e => setDescription(e.target.value)} style={{ marginBottom: '20px' }} />
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={addGrade} className="btn btn-primary">Hozzáadás</button>
+              <button onClick={() => setShowForm(false)} className="btn btn-ghost">Mégse</button>
             </div>
           </div>
         )}
 
-        {/* Jegyek tantárgyak szerint */}
+        {/* Jegyek */}
         {loading ? (
-          <p className="text-gray-400">Betöltés...</p>
+          <div style={{ textAlign: 'center', padding: '80px', color: 'var(--muted)' }}>Betöltés...</div>
         ) : grades.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <div className="text-6xl mb-4">📊</div>
-            <p className="text-xl">Még nincs jegyed hozzáadva</p>
-            <p className="text-sm mt-2">Add hozzá az első jegyed!</p>
+          <div style={{ textAlign: 'center', padding: '100px 48px' }}>
+            <div style={{ fontSize: '64px', marginBottom: '20px' }}>📊</div>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '22px', marginBottom: '12px' }}>Még nincs jegyed</h2>
+            <p style={{ color: 'var(--muted)', marginBottom: '32px' }}>Add hozzá az első jegyed!</p>
+            <button onClick={() => setShowForm(true)} className="btn btn-primary">+ Jegy hozzáadása</button>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {Object.entries(groups).map(([subjectName, subjectGrades]) => (
-              <div key={subjectName} className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold">{subjectName}</h2>
-                  <p className={`text-2xl font-bold ${getGradeColor(calcAverage(subjectGrades))}`}>
-                    {calcAverage(subjectGrades)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {subjectGrades.map(g => (
-                    <div key={g.id} className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-2">
-                      <span className={`font-bold text-lg px-2 py-0.5 rounded-lg ${getGradeBg(g.grade)}`}>
-                        {g.grade}
-                      </span>
-                      {g.description && <span className="text-gray-400 text-sm">{g.description}</span>}
-                      <span className="text-gray-600 text-xs">{new Date(g.date).toLocaleDateString('hu-HU')}</span>
-                      <button
-                        onClick={() => deleteGrade(g.id)}
-                        className="text-gray-600 hover:text-red-500 transition ml-1"
-                      >
-                        ×
-                      </button>
+          <div className="animate-fade-up delay-3" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {Object.entries(groups).map(([subjectName, subjectGrades]) => {
+              const avg = calcAverage(subjectGrades)
+              const color = getGradeColor(avg)
+              return (
+                <div key={subjectName} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden' }}>
+
+                  {/* Tantárgy fejléc */}
+                  <div style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                    <div>
+                      <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>{subjectName}</h2>
+                      <p style={{ color: 'var(--muted)', fontSize: '13px' }}>{subjectGrades.length} jegy</p>
                     </div>
-                  ))}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      {/* Mini progress bar */}
+                      <div style={{ width: '100px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px', textAlign: 'right' }}>átlag</div>
+                        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '100px', height: '4px' }}>
+                          <div style={{ height: '100%', background: color, borderRadius: '100px', width: `${(avg / 5) * 100}%`, transition: 'width 0.4s' }} />
+                        </div>
+                      </div>
+                      <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '28px', color, minWidth: '52px', textAlign: 'right', letterSpacing: '-1px' }}>{avg}</div>
+                    </div>
+                  </div>
+
+                  {/* Jegyek */}
+                  <div style={{ padding: '16px 28px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {subjectGrades.map(g => {
+                      const badge = getGradeBadge(g.grade)
+                      return (
+                        <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '12px', padding: '8px 12px' }}>
+                          <span style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '18px', color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, padding: '2px 10px', borderRadius: '8px' }}>{g.grade}</span>
+                          {g.description && <span style={{ color: 'var(--muted)', fontSize: '13px' }}>{g.description}</span>}
+                          <span style={{ color: 'var(--muted)', fontSize: '12px', opacity: 0.5 }}>{new Date(g.date).toLocaleDateString('hu-HU')}</span>
+                          <button onClick={() => deleteGrade(g.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.3, fontSize: '14px', transition: 'opacity 0.2s', lineHeight: 1 }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                            onMouseLeave={e => e.currentTarget.style.opacity = 0.3}
+                          >×</button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }
