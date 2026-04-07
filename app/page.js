@@ -46,6 +46,19 @@ export default async function Home() {
           <Link href="/sign-in" className="btn btn-ghost" style={{ padding: '8px 16px', fontSize: '13px' }}>Bejelentkezés</Link>
           <Link href="/sign-up" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>Regisztráció →</Link>
         </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+  {cards.length > 0 && (
+    <Link href={`/dashboard/flashcards/${deckId}/study`} style={{ textDecoration: 'none' }}>
+      <button className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>🧠 Tanulás</button>
+    </Link>
+  )}
+  {cards.length > 0 && (
+    <Link href={`/dashboard/flashcards/${deckId}/examiner`} style={{ textDecoration: 'none' }}>
+      <button className="btn btn-primary" style={{ padding: '10px 16px', fontSize: '13px' }}>🎓 Vizsgáztatás</button>
+    </Link>
+  )}
+  <button onClick={() => { setShowForm(!showForm); setActiveTab('general') }} className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>+ Kártya</button>
+</div>
       </nav>
 
       {/* Hero */}
