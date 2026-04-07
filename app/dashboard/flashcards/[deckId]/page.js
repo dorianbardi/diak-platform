@@ -92,10 +92,107 @@ export default function DeckPage() {
     setPdfLoading(false)
   }
 
-  function toggleFlip(id) { setFlipped(prev => ({ ...prev, [id]: !prev[id] })) }
+  function toggleFlip(id) {
+    setFlipped(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   const aiCards = cards.filter(c => c.is_ai_generated)
   const manualCards = cards.filter(c => !c.is_ai_generated)
+
+  function renderCard(card, isAi) {
+    const isFlipped = flipped[card.id]
+    const accentColor = isAi ? 'var(--accent-purple)' : 'var(--accent-blue)'
+    const accentBg = isAi ? 'rgba(155,109,255,0.12)' : 'rgba(79,142,255,0.12)'
+    const accentBorder = isAi ? 'rgba(155,109,255,0.25)' : 'rgba(79,142,255,0.25)'
+
+    return (
+      <div key={card.id} style={{ perspective: '1200px', cursor: 'pointer', height: '200px' }} onClick={() => toggleFlip(card.id)}>
+        <div style={{
+          position: 'relative', width: '100%', height: '100%',
+          transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+          transformStyle: 'preserve-3d',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}>
+
+          {/* Elő oldal — Kérdés */}
+          <div style={{
+            position: 'absolute', width: '100%', height: '100%',
+            backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+            borderRadius: 'var(--radius)', padding: '24px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            overflow: 'hidden',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxSizing: 'border-box',
+          }}>
+            {/* Dekoratív kör */}
+            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: accentBg, border: `1px solid ${accentBorder}`, pointerEvents: 'none' }} />
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: accentColor, background: accentBg, border: `1px solid ${accentBorder}`, padding: '3px 10px', borderRadius: '100px' }}>
+                    {isAi ? '🤖 AI' : '✍️ Saját'}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '2px', textTransform: 'uppercase' }}>KÉRDÉS</span>
+                </div>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: accentBg, border: `1px solid ${accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: accentColor, fontWeight: 700, flexShrink: 0 }}>?</div>
+              </div>
+              <p style={{ fontSize: 'clamp(13px, 1.6vw, 15px)', lineHeight: 1.7, color: 'var(--text)', fontWeight: 500 }}>{card.question}</p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--muted)', fontSize: '11px' }}>
+                <span>👆</span> Kattints a válaszhoz
+              </div>
+              <button onClick={e => { e.stopPropagation(); deleteCard(card.id) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.3, fontSize: '13px', transition: 'opacity 0.2s', padding: '4px' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0.3}
+              >🗑️</button>
+            </div>
+          </div>
+
+          {/* Hátsó oldal — Válasz */}
+          <div style={{
+            position: 'absolute', width: '100%', height: '100%',
+            backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+            borderRadius: 'var(--radius)', padding: '24px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            overflow: 'hidden',
+            background: isAi
+              ? 'linear-gradient(135deg, rgba(155,109,255,0.15), rgba(155,109,255,0.05))'
+              : 'linear-gradient(135deg, rgba(79,142,255,0.15), rgba(79,142,255,0.05))',
+            border: `1px solid ${isAi ? 'rgba(155,109,255,0.4)' : 'rgba(79,142,255,0.4)'}`,
+            boxShadow: `inset 0 0 40px ${isAi ? 'rgba(155,109,255,0.05)' : 'rgba(79,142,255,0.05)'}`,
+            transform: 'rotateY(180deg)',
+            boxSizing: 'border-box',
+          }}>
+            {/* Dekoratív kör */}
+            <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: accentBg, pointerEvents: 'none' }} />
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: accentColor, background: accentBg, border: `1px solid ${accentBorder}`, padding: '3px 10px', borderRadius: '100px' }}>✓ VÁLASZ</span>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: accentBg, border: `1px solid ${accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: accentColor, fontWeight: 700, flexShrink: 0 }}>✓</div>
+              </div>
+              <p style={{ fontSize: 'clamp(13px, 1.6vw, 15px)', lineHeight: 1.7, color: 'var(--text)', fontWeight: 600 }}>{card.answer}</p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--muted)', fontSize: '11px' }}>
+                <span>🔄</span> Kattints vissza
+              </div>
+              <button onClick={e => { e.stopPropagation(); deleteCard(card.id) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.3, fontSize: '13px', transition: 'opacity 0.2s', padding: '4px' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0.3}
+              >🗑️</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -129,7 +226,7 @@ export default function DeckPage() {
           {deck?.description && <p className="section-desc">{deck.description}</p>}
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '13px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', padding: '4px 12px', borderRadius: '100px' }}>
-              {cards.length} kártya
+              {cards.length} kártya összesen
             </span>
             {aiCards.length > 0 && (
               <span style={{ fontSize: '13px', color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.08)', border: '1px solid rgba(155,109,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>
@@ -138,7 +235,7 @@ export default function DeckPage() {
             )}
             {manualCards.length > 0 && (
               <span style={{ fontSize: '13px', color: 'var(--accent-blue)', background: 'rgba(79,142,255,0.08)', border: '1px solid rgba(79,142,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>
-                ✍️ {manualCards.length} manuális
+                ✍️ {manualCards.length} saját
               </span>
             )}
           </div>
@@ -148,9 +245,9 @@ export default function DeckPage() {
         <div className="animate-fade-up delay-2" style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <span>🤖</span>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI kártyagenerálás — Témából</h2>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — Témából</h2>
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát és az AI generál 10 kártyát automatikusan.</p>
+          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát és az AI 10 kártyát generál automatikusan.</p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <input className="input" placeholder="pl. Francia forradalom..." value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1, minWidth: '200px' }} />
             <button onClick={generateWithAI} disabled={aiLoading} className="btn btn-primary">
@@ -159,30 +256,28 @@ export default function DeckPage() {
           </div>
         </div>
 
-        {/* AI generálás PDF-ből */}
+        {/* PDF generálás */}
         <div className="animate-fade-up delay-2" style={{ background: 'rgba(155,109,255,0.05)', border: '1px solid rgba(155,109,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <span>📄</span>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI kártyagenerálás — PDF-ből</h2>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — PDF-ből</h2>
           </div>
           <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Tölts fel egy PDF-et és az AI automatikusan generál belőle kártyákat!</p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <input
-              type="file" accept=".pdf"
-              onChange={e => setPdfFile(e.target.files[0])}
-              style={{ flex: 1, minWidth: '200px', color: 'var(--muted)', fontSize: '13px' }}
-            />
-            <button onClick={generateFromPDF} disabled={pdfLoading || !pdfFile} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, var(--accent-purple), #7b4fd4)' }}>
-              {pdfLoading ? '⏳ Feldolgozás...' : '📄 Generálás PDF-ből'}
+            <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])}
+              style={{ flex: 1, minWidth: '200px', color: 'var(--muted)', fontSize: '13px' }} />
+            <button onClick={generateFromPDF} disabled={pdfLoading || !pdfFile} className="btn btn-primary"
+              style={{ background: 'linear-gradient(135deg, var(--accent-purple), #7b4fd4)' }}>
+              {pdfLoading ? '⏳ Feldolgozás...' : '📄 Generálás'}
             </button>
           </div>
           {pdfFile && <p style={{ color: 'var(--accent-purple)', fontSize: '12px', marginTop: '8px' }}>✓ {pdfFile.name}</p>}
         </div>
 
-        {/* Új kártya form */}
+        {/* Manuális kártya form */}
         {showForm && (
           <div className="animate-fade-up delay-1" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', marginBottom: '14px' }}>✍️ Új kártya manuálisan</h2>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', marginBottom: '14px' }}>✍️ Új saját kártya</h2>
             <textarea className="input" placeholder="Kérdés" value={question} onChange={e => setQuestion(e.target.value)} style={{ marginBottom: '10px', height: '80px', resize: 'none' }} />
             <textarea className="input" placeholder="Válasz" value={answer} onChange={e => setAnswer(e.target.value)} style={{ marginBottom: '14px', height: '80px', resize: 'none' }} />
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -207,77 +302,25 @@ export default function DeckPage() {
             {/* AI kártyák */}
             {aiCards.length > 0 && (
               <div style={{ marginBottom: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-purple)' }}>🤖 AI generált kártyák</span>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(155,109,255,0.2)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-purple)' }}>🤖 AI generált kártyák ({aiCards.length})</span>
+                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(155,109,255,0.4), transparent)' }} />
                 </div>
                 <div className="grid-2">
-                  {aiCards.map(card => (
-                    <div key={card.id} onClick={() => toggleFlip(card.id)} style={{
-                      background: flipped[card.id] ? 'rgba(155,109,255,0.08)' : 'rgba(155,109,255,0.03)',
-                      border: `1px solid ${flipped[card.id] ? 'rgba(155,109,255,0.3)' : 'rgba(155,109,255,0.15)'}`,
-                      borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)',
-                      cursor: 'pointer', minHeight: '130px',
-                      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                      transition: 'all 0.3s',
-                    }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.1)', border: '1px solid rgba(155,109,255,0.2)', padding: '2px 8px', borderRadius: '100px' }}>🤖 AI</span>
-                          <span style={{ fontSize: '11px', color: flipped[card.id] ? 'var(--accent-purple)' : 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>
-                            {flipped[card.id] ? 'VÁLASZ' : 'KÉRDÉS'}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: 'clamp(13px, 1.5vw, 15px)', lineHeight: 1.6 }}>{flipped[card.id] ? card.answer : card.question}</p>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Kattints a forgatáshoz</span>
-                        <button onClick={e => { e.stopPropagation(); deleteCard(card.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, transition: 'opacity 0.2s' }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                          onMouseLeave={e => e.currentTarget.style.opacity = 0.4}
-                        >🗑️</button>
-                      </div>
-                    </div>
-                  ))}
+                  {aiCards.map(card => renderCard(card, true))}
                 </div>
               </div>
             )}
 
-            {/* Manuális kártyák */}
+            {/* Saját kártyák */}
             {manualCards.length > 0 && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-blue)' }}>✍️ Manuális kártyák</span>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(79,142,255,0.2)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-blue)' }}>✍️ Saját kártyák ({manualCards.length})</span>
+                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(79,142,255,0.4), transparent)' }} />
                 </div>
                 <div className="grid-2">
-                  {manualCards.map(card => (
-                    <div key={card.id} onClick={() => toggleFlip(card.id)} style={{
-                      background: flipped[card.id] ? 'rgba(79,142,255,0.08)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${flipped[card.id] ? 'rgba(79,142,255,0.3)' : 'var(--border)'}`,
-                      borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)',
-                      cursor: 'pointer', minHeight: '130px',
-                      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                      transition: 'all 0.3s',
-                    }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--accent-blue)', background: 'rgba(79,142,255,0.1)', border: '1px solid rgba(79,142,255,0.2)', padding: '2px 8px', borderRadius: '100px' }}>✍️ Manuális</span>
-                          <span style={{ fontSize: '11px', color: flipped[card.id] ? 'var(--accent-blue)' : 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>
-                            {flipped[card.id] ? 'VÁLASZ' : 'KÉRDÉS'}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: 'clamp(13px, 1.5vw, 15px)', lineHeight: 1.6 }}>{flipped[card.id] ? card.answer : card.question}</p>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Kattints a forgatáshoz</span>
-                        <button onClick={e => { e.stopPropagation(); deleteCard(card.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, transition: 'opacity 0.2s' }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                          onMouseLeave={e => e.currentTarget.style.opacity = 0.4}
-                        >🗑️</button>
-                      </div>
-                    </div>
-                  ))}
+                  {manualCards.map(card => renderCard(card, false))}
                 </div>
               </div>
             )}
