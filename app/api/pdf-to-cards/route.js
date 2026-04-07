@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextResponse } from 'next/server'
-import pdf from 'pdf-parse'
+import { extractText } from 'unpdf'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
@@ -14,9 +14,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'PDF fájl szükséges' }, { status: 400 })
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const pdfData = await pdf(buffer)
-    const text = pdfData.text.slice(0, 8000)
+    const buffer = new Uint8Array(await file.arrayBuffer())
+    const { text: extractedText } = await extractText(buffer, { mergePages: true })
+    const text = extractedText.slice(0, 8000)
 
     if (!text.trim()) {
       return NextResponse.json({ error: 'A PDF nem tartalmaz szöveget' }, { status: 400 })
