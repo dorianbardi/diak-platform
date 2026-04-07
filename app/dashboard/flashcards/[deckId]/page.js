@@ -20,12 +20,14 @@ export default function DeckPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfFile, setPdfFile] = useState(null)
+  const [summaries, setSummaries] = useState([])
 
   useEffect(() => { if (user) { fetchDeck(); fetchCards() } }, [user])
 
   async function fetchDeck() {
     const { data } = await supabase.from('flashcard_decks').select('*').eq('id', deckId).single()
     setDeck(data)
+    setSummaries(data?.summaries || [])
   }
 
   async function fetchCards() {
@@ -58,13 +60,29 @@ export default function DeckPage() {
       })
       const data = await res.json()
       if (data.error) { alert('Hiba: ' + data.error); setAiLoading(false); return }
+
+      // Kártyák mentése
       for (const card of data.cards) {
         await supabase.from('flashcards').insert({
           deck_id: deckId, user_id: user.id,
           question: card.question, answer: card.answer,
-          is_ai_generated: true,
+          is_ai_generated: true, topic: data.topic,
         })
       }
+
+      // Összefoglaló mentése
+      if (data.summary) {
+        const newSummary = {
+          topic: data.topic,
+          summary: data.summary,
+          key_points: data.key_points || [],
+          created_at: new Date().toISOString(),
+        }
+        const updatedSummaries = [...summaries, newSummary]
+        await supabase.from('flashcard_decks').update({ summaries: updatedSummaries }).eq('id', deckId)
+        setSummaries(updatedSummaries)
+      }
+
       setAiTopic(''); fetchCards()
     } catch (e) { console.error(e); alert('Váratlan hiba!') }
     setAiLoading(false)
@@ -96,8 +114,19 @@ export default function DeckPage() {
     setFlipped(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const aiCards = cards.filter(c => c.is_ai_generated)
+  // Témánkénti csoportosítás
+  function groupByTopic() {
+    const groups = {}
+    cards.filter(c => c.is_ai_generated).forEach(card => {
+      const topic = card.topic || 'Egyéb'
+      if (!groups[topic]) groups[topic] = []
+      groups[topic].push(card)
+    })
+    return groups
+  }
+
   const manualCards = cards.filter(c => !c.is_ai_generated)
+  const topicGroups = groupByTopic()
 
   function renderCard(card, isAi) {
     const isFlipped = flipped[card.id]
@@ -113,21 +142,17 @@ export default function DeckPage() {
           transformStyle: 'preserve-3d',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
         }}>
-
-          {/* Elő oldal — Kérdés */}
+          {/* Elő oldal */}
           <div style={{
             position: 'absolute', width: '100%', height: '100%',
             backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
             borderRadius: 'var(--radius)', padding: '24px',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-            overflow: 'hidden',
+            overflow: 'hidden', boxSizing: 'border-box',
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.08)',
-            boxSizing: 'border-box',
           }}>
-            {/* Dekoratív kör */}
             <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: accentBg, border: `1px solid ${accentBorder}`, pointerEvents: 'none' }} />
-
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -152,24 +177,20 @@ export default function DeckPage() {
             </div>
           </div>
 
-          {/* Hátsó oldal — Válasz */}
+          {/* Hátsó oldal */}
           <div style={{
             position: 'absolute', width: '100%', height: '100%',
             backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
             borderRadius: 'var(--radius)', padding: '24px',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-            overflow: 'hidden',
+            overflow: 'hidden', boxSizing: 'border-box',
             background: isAi
               ? 'linear-gradient(135deg, rgba(155,109,255,0.15), rgba(155,109,255,0.05))'
               : 'linear-gradient(135deg, rgba(79,142,255,0.15), rgba(79,142,255,0.05))',
             border: `1px solid ${isAi ? 'rgba(155,109,255,0.4)' : 'rgba(79,142,255,0.4)'}`,
-            boxShadow: `inset 0 0 40px ${isAi ? 'rgba(155,109,255,0.05)' : 'rgba(79,142,255,0.05)'}`,
             transform: 'rotateY(180deg)',
-            boxSizing: 'border-box',
           }}>
-            {/* Dekoratív kör */}
             <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: accentBg, pointerEvents: 'none' }} />
-
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <span style={{ fontSize: '10px', fontWeight: 700, color: accentColor, background: accentBg, border: `1px solid ${accentBorder}`, padding: '3px 10px', borderRadius: '100px' }}>✓ VÁLASZ</span>
@@ -188,7 +209,6 @@ export default function DeckPage() {
               >🗑️</button>
             </div>
           </div>
-
         </div>
       </div>
     )
@@ -220,6 +240,7 @@ export default function DeckPage() {
 
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
 
+        {/* Header */}
         <div className="animate-fade-up delay-1" style={{ marginBottom: '32px' }}>
           <div className="section-label" style={{ color: 'var(--accent-blue)' }}>✦ Kártyacsomag</div>
           <h1 className="section-title">{deck?.name}</h1>
@@ -228,9 +249,9 @@ export default function DeckPage() {
             <span style={{ fontSize: '13px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', padding: '4px 12px', borderRadius: '100px' }}>
               {cards.length} kártya összesen
             </span>
-            {aiCards.length > 0 && (
+            {Object.keys(topicGroups).length > 0 && (
               <span style={{ fontSize: '13px', color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.08)', border: '1px solid rgba(155,109,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>
-                🤖 {aiCards.length} AI generált
+                🤖 {Object.keys(topicGroups).length} téma
               </span>
             )}
             {manualCards.length > 0 && (
@@ -241,13 +262,44 @@ export default function DeckPage() {
           </div>
         </div>
 
+        {/* AI összefoglalók */}
+        {summaries.length > 0 && (
+          <div className="animate-fade-up delay-1" style={{ marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-green)' }}>📚 AI összefoglalók</span>
+              <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(45,212,160,0.4), transparent)' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
+              {summaries.map((s, i) => (
+                <div key={i} style={{ background: 'rgba(45,212,160,0.04)', border: '1px solid rgba(45,212,160,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(45,212,160,0.06)', pointerEvents: 'none' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-green)', background: 'rgba(45,212,160,0.1)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>📚 ÖSSZEFOGLALÓ</span>
+                    <h3 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', color: 'var(--accent-green)' }}>{s.topic}</h3>
+                  </div>
+                  <p style={{ color: 'var(--muted)', fontSize: '14px', lineHeight: 1.8, marginBottom: s.key_points?.length > 0 ? '16px' : '0' }}>{s.summary}</p>
+                  {s.key_points?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {s.key_points.map((point, j) => (
+                        <span key={j} style={{ fontSize: '12px', color: 'var(--text)', background: 'rgba(45,212,160,0.06)', border: '1px solid rgba(45,212,160,0.15)', padding: '4px 12px', borderRadius: '100px', lineHeight: 1.5 }}>
+                          ✦ {point}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* AI generálás témából */}
         <div className="animate-fade-up delay-2" style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <span>🤖</span>
             <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — Témából</h2>
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát és az AI 10 kártyát generál automatikusan.</p>
+          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát — az AI összefoglalót és 10 kártyát generál!</p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <input className="input" placeholder="pl. Francia forradalom..." value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1, minWidth: '200px' }} />
             <button onClick={generateWithAI} disabled={aiLoading} className="btn btn-primary">
@@ -299,18 +351,22 @@ export default function DeckPage() {
         ) : (
           <div className="animate-fade-up delay-3">
 
-            {/* AI kártyák */}
-            {aiCards.length > 0 && (
-              <div style={{ marginBottom: '32px' }}>
+            {/* Témánkénti AI kártyák */}
+            {Object.entries(topicGroups).map(([topic, topicCards]) => (
+              <div key={topic} style={{ marginBottom: '36px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-purple)' }}>🤖 AI generált kártyák ({aiCards.length})</span>
-                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(155,109,255,0.4), transparent)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.1)', border: '1px solid rgba(155,109,255,0.2)', padding: '3px 10px', borderRadius: '100px' }}>🤖 AI</span>
+                    <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px', color: 'var(--text)' }}>{topic}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>({topicCards.length} kártya)</span>
+                  </div>
+                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(155,109,255,0.3), transparent)' }} />
                 </div>
                 <div className="grid-2">
-                  {aiCards.map(card => renderCard(card, true))}
+                  {topicCards.map(card => renderCard(card, true))}
                 </div>
               </div>
-            )}
+            ))}
 
             {/* Saját kártyák */}
             {manualCards.length > 0 && (

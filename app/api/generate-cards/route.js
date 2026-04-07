@@ -11,14 +11,18 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Téma megadása kötelező' }, { status: 400 })
     }
 
-    const prompt = `Generálj ${count} flashcardot a következő témához: "${topic}".
-    
-Válaszolj CSAK JSON formátumban, semmi más szöveg nélkül, ne használj markdown backtick-eket:
-[
-  {"question": "kérdés szövege", "answer": "válasz szövege"}
-]
+    const prompt = `A következő témához generálj tanulási anyagot: "${topic}".
 
-A kérdések legyenek rövidek és konkrétak. A válaszok legyenek tömörek. Magyarul válaszolj!`
+Válaszolj CSAK JSON formátumban, semmi más szöveg nélkül, ne használj markdown backtick-eket:
+{
+  "summary": "2-3 mondatos tömör összefoglaló a témáról magyarul",
+  "key_points": ["3-5 legfontosabb pont a témáról"],
+  "cards": [
+    {"question": "kérdés szövege", "answer": "válasz szövege"}
+  ]
+}
+
+Generálj pontosan ${count} kártyát. Minden magyarul legyen!`
 
     const modelNames = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']
     let result
@@ -35,9 +39,19 @@ A kérdések legyenek rövidek és konkrétak. A válaszok legyenek tömörek. M
     }
 
     const text = result.response.text().trim()
-    const cards = JSON.parse(text)
-    const markedCards = cards.map(card => ({ ...card, is_ai_generated: true }))
-    return NextResponse.json({ cards: markedCards })
+    const data = JSON.parse(text)
+    const markedCards = data.cards.map(card => ({
+      ...card,
+      is_ai_generated: true,
+      topic,
+    }))
+
+    return NextResponse.json({
+      cards: markedCards,
+      summary: data.summary,
+      key_points: data.key_points,
+      topic,
+    })
 
   } catch (e) {
     console.error(e)
