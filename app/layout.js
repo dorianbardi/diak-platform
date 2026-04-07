@@ -1,6 +1,7 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import { Geist } from 'next/font/google'
 import './globals.css'
+import { Analytics } from '@vercel/analytics/react'
 
 const geist = Geist({
   variable: '--font-geist',
@@ -38,6 +39,7 @@ export default function RootLayout({ children }) {
       <html lang="hu">
         <body className={`${geist.variable} antialiased`}>
           {children}
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
