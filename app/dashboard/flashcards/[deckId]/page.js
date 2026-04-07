@@ -21,6 +21,9 @@ export default function DeckPage() {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfFile, setPdfFile] = useState(null)
   const [summaries, setSummaries] = useState([])
+  const [activeTab, setActiveTab] = useState('kartyak')
+  const [collapsedTopics, setCollapsedTopics] = useState({})
+  const [collapsedSummaries, setCollapsedSummaries] = useState({})
 
   useEffect(() => { if (user) { fetchDeck(); fetchCards() } }, [user])
 
@@ -60,8 +63,6 @@ export default function DeckPage() {
       })
       const data = await res.json()
       if (data.error) { alert('Hiba: ' + data.error); setAiLoading(false); return }
-
-      // Kártyák mentése
       for (const card of data.cards) {
         await supabase.from('flashcards').insert({
           deck_id: deckId, user_id: user.id,
@@ -69,21 +70,14 @@ export default function DeckPage() {
           is_ai_generated: true, topic: data.topic,
         })
       }
-
-      // Összefoglaló mentése
       if (data.summary) {
-        const newSummary = {
-          topic: data.topic,
-          summary: data.summary,
-          key_points: data.key_points || [],
-          created_at: new Date().toISOString(),
-        }
+        const newSummary = { topic: data.topic, summary: data.summary, key_points: data.key_points || [], created_at: new Date().toISOString() }
         const updatedSummaries = [...summaries, newSummary]
         await supabase.from('flashcard_decks').update({ summaries: updatedSummaries }).eq('id', deckId)
         setSummaries(updatedSummaries)
       }
-
       setAiTopic(''); fetchCards()
+      setActiveTab('kartyak')
     } catch (e) { console.error(e); alert('Váratlan hiba!') }
     setAiLoading(false)
   }
@@ -106,15 +100,15 @@ export default function DeckPage() {
         })
       }
       setPdfFile(null); fetchCards()
+      setActiveTab('kartyak')
     } catch (e) { console.error(e); alert('Váratlan hiba!') }
     setPdfLoading(false)
   }
 
-  function toggleFlip(id) {
-    setFlipped(prev => ({ ...prev, [id]: !prev[id] }))
-  }
+  function toggleFlip(id) { setFlipped(prev => ({ ...prev, [id]: !prev[id] })) }
+  function toggleTopic(topic) { setCollapsedTopics(prev => ({ ...prev, [topic]: !prev[topic] })) }
+  function toggleSummary(i) { setCollapsedSummaries(prev => ({ ...prev, [i]: !prev[i] })) }
 
-  // Témánkénti csoportosítás
   function groupByTopic() {
     const groups = {}
     cards.filter(c => c.is_ai_generated).forEach(card => {
@@ -127,6 +121,13 @@ export default function DeckPage() {
 
   const manualCards = cards.filter(c => !c.is_ai_generated)
   const topicGroups = groupByTopic()
+  const aiCardCount = cards.filter(c => c.is_ai_generated).length
+
+  const tabs = [
+    { id: 'kartyak', label: '🃏 Kártyák', count: cards.length },
+    { id: 'osszefogl', label: '📚 Összefoglalók', count: summaries.length },
+    { id: 'general', label: '✨ Generálás', count: null },
+  ]
 
   function renderCard(card, isAi) {
     const isFlipped = flipped[card.id]
@@ -142,7 +143,6 @@ export default function DeckPage() {
           transformStyle: 'preserve-3d',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
         }}>
-          {/* Elő oldal */}
           <div style={{
             position: 'absolute', width: '100%', height: '100%',
             backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
@@ -177,7 +177,6 @@ export default function DeckPage() {
             </div>
           </div>
 
-          {/* Hátsó oldal */}
           <div style={{
             position: 'absolute', width: '100%', height: '100%',
             backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
@@ -234,152 +233,213 @@ export default function DeckPage() {
               <button className="btn btn-primary" style={{ padding: '10px 16px', fontSize: '13px' }}>🧠 Tanulás</button>
             </Link>
           )}
-          <button onClick={() => setShowForm(!showForm)} className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>+ Kártya</button>
+          <button onClick={() => { setShowForm(!showForm); setActiveTab('general') }} className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>+ Kártya</button>
         </div>
       </nav>
 
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
 
         {/* Header */}
-        <div className="animate-fade-up delay-1" style={{ marginBottom: '32px' }}>
+        <div className="animate-fade-up delay-1" style={{ marginBottom: '28px' }}>
           <div className="section-label" style={{ color: 'var(--accent-blue)' }}>✦ Kártyacsomag</div>
           <h1 className="section-title">{deck?.name}</h1>
           {deck?.description && <p className="section-desc">{deck.description}</p>}
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '13px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', padding: '4px 12px', borderRadius: '100px' }}>
-              {cards.length} kártya összesen
-            </span>
-            {Object.keys(topicGroups).length > 0 && (
-              <span style={{ fontSize: '13px', color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.08)', border: '1px solid rgba(155,109,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>
-                🤖 {Object.keys(topicGroups).length} téma
-              </span>
-            )}
-            {manualCards.length > 0 && (
-              <span style={{ fontSize: '13px', color: 'var(--accent-blue)', background: 'rgba(79,142,255,0.08)', border: '1px solid rgba(79,142,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>
-                ✍️ {manualCards.length} saját
-              </span>
-            )}
+            <span style={{ fontSize: '13px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', padding: '4px 12px', borderRadius: '100px' }}>{cards.length} kártya</span>
+            {Object.keys(topicGroups).length > 0 && <span style={{ fontSize: '13px', color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.08)', border: '1px solid rgba(155,109,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>🤖 {aiCardCount} AI</span>}
+            {manualCards.length > 0 && <span style={{ fontSize: '13px', color: 'var(--accent-blue)', background: 'rgba(79,142,255,0.08)', border: '1px solid rgba(79,142,255,0.2)', padding: '4px 12px', borderRadius: '100px' }}>✍️ {manualCards.length} saját</span>}
           </div>
         </div>
 
-        {/* AI összefoglalók */}
-        {summaries.length > 0 && (
-          <div className="animate-fade-up delay-1" style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-green)' }}>📚 AI összefoglalók</span>
-              <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(45,212,160,0.4), transparent)' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
-              {summaries.map((s, i) => (
-                <div key={i} style={{ background: 'rgba(45,212,160,0.04)', border: '1px solid rgba(45,212,160,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(45,212,160,0.06)', pointerEvents: 'none' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-green)', background: 'rgba(45,212,160,0.1)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>📚 ÖSSZEFOGLALÓ</span>
-                    <h3 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', color: 'var(--accent-green)' }}>{s.topic}</h3>
-                  </div>
-                  <p style={{ color: 'var(--muted)', fontSize: '14px', lineHeight: 1.8, marginBottom: s.key_points?.length > 0 ? '16px' : '0' }}>{s.summary}</p>
-                  {s.key_points?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {s.key_points.map((point, j) => (
-                        <span key={j} style={{ fontSize: '12px', color: 'var(--text)', background: 'rgba(45,212,160,0.06)', border: '1px solid rgba(45,212,160,0.15)', padding: '4px 12px', borderRadius: '100px', lineHeight: 1.5 }}>
-                          ✦ {point}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* AI generálás témából */}
-        <div className="animate-fade-up delay-2" style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span>🤖</span>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — Témából</h2>
-          </div>
-          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát — az AI összefoglalót és 10 kártyát generál!</p>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <input className="input" placeholder="pl. Francia forradalom..." value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1, minWidth: '200px' }} />
-            <button onClick={generateWithAI} disabled={aiLoading} className="btn btn-primary">
-              {aiLoading ? '⏳ Generálás...' : '✨ Generálás'}
+        {/* Tab navigáció */}
+        <div className="animate-fade-up delay-2" style={{ display: 'flex', gap: '4px', marginBottom: '28px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '14px', padding: '4px', flexWrap: 'wrap' }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              flex: 1, minWidth: '100px',
+              padding: '10px 16px', borderRadius: '10px',
+              border: 'none', cursor: 'pointer',
+              fontFamily: 'Geist', fontWeight: 600, fontSize: '13px',
+              transition: 'all 0.2s',
+              background: activeTab === tab.id ? 'linear-gradient(135deg, var(--accent-blue), var(--accent-purple))' : 'transparent',
+              color: activeTab === tab.id ? 'white' : 'var(--muted)',
+              boxShadow: activeTab === tab.id ? '0 4px 12px rgba(79,142,255,0.3)' : 'none',
+            }}>
+              {tab.label}
+              {tab.count !== null && tab.count > 0 && (
+                <span style={{ marginLeft: '6px', fontSize: '11px', opacity: 0.8 }}>({tab.count})</span>
+              )}
             </button>
-          </div>
+          ))}
         </div>
 
-        {/* PDF generálás */}
-        <div className="animate-fade-up delay-2" style={{ background: 'rgba(155,109,255,0.05)', border: '1px solid rgba(155,109,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span>📄</span>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — PDF-ből</h2>
-          </div>
-          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Tölts fel egy PDF-et és az AI automatikusan generál belőle kártyákat!</p>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])}
-              style={{ flex: 1, minWidth: '200px', color: 'var(--muted)', fontSize: '13px' }} />
-            <button onClick={generateFromPDF} disabled={pdfLoading || !pdfFile} className="btn btn-primary"
-              style={{ background: 'linear-gradient(135deg, var(--accent-purple), #7b4fd4)' }}>
-              {pdfLoading ? '⏳ Feldolgozás...' : '📄 Generálás'}
-            </button>
-          </div>
-          {pdfFile && <p style={{ color: 'var(--accent-purple)', fontSize: '12px', marginTop: '8px' }}>✓ {pdfFile.name}</p>}
-        </div>
-
-        {/* Manuális kártya form */}
-        {showForm && (
-          <div className="animate-fade-up delay-1" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', marginBottom: '14px' }}>✍️ Új saját kártya</h2>
-            <textarea className="input" placeholder="Kérdés" value={question} onChange={e => setQuestion(e.target.value)} style={{ marginBottom: '10px', height: '80px', resize: 'none' }} />
-            <textarea className="input" placeholder="Válasz" value={answer} onChange={e => setAnswer(e.target.value)} style={{ marginBottom: '14px', height: '80px', resize: 'none' }} />
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button onClick={addCard} className="btn btn-primary">Hozzáadás</button>
-              <button onClick={() => setShowForm(false)} className="btn btn-ghost">Mégse</button>
-            </div>
-          </div>
-        )}
-
-        {/* Kártyák */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px', color: 'var(--muted)' }}>Betöltés...</div>
-        ) : cards.length === 0 ? (
-          <div className="empty-state">
-            <div className="emoji">📭</div>
-            <h2>Még nincs kártya</h2>
-            <p>Adj hozzá kártyákat manuálisan vagy generálj AI-jal!</p>
-          </div>
-        ) : (
-          <div className="animate-fade-up delay-3">
-
-            {/* Témánkénti AI kártyák */}
-            {Object.entries(topicGroups).map(([topic, topicCards]) => (
-              <div key={topic} style={{ marginBottom: '36px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.1)', border: '1px solid rgba(155,109,255,0.2)', padding: '3px 10px', borderRadius: '100px' }}>🤖 AI</span>
-                    <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px', color: 'var(--text)' }}>{topic}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>({topicCards.length} kártya)</span>
-                  </div>
-                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(155,109,255,0.3), transparent)' }} />
-                </div>
-                <div className="grid-2">
-                  {topicCards.map(card => renderCard(card, true))}
-                </div>
+        {/* Tab: Kártyák */}
+        {activeTab === 'kartyak' && (
+          <div>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '80px', color: 'var(--muted)' }}>Betöltés...</div>
+            ) : cards.length === 0 ? (
+              <div className="empty-state">
+                <div className="emoji">📭</div>
+                <h2>Még nincs kártya</h2>
+                <p>Generálj AI-jal vagy adj hozzá manuálisan!</p>
+                <button onClick={() => setActiveTab('general')} className="btn btn-primary">✨ Generálás</button>
               </div>
-            ))}
-
-            {/* Saját kártyák */}
-            {manualCards.length > 0 && (
+            ) : (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-blue)' }}>✍️ Saját kártyák ({manualCards.length})</span>
-                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(79,142,255,0.4), transparent)' }} />
-                </div>
-                <div className="grid-2">
-                  {manualCards.map(card => renderCard(card, false))}
-                </div>
+                {/* Témánkénti AI kártyák */}
+                {Object.entries(topicGroups).map(([topic, topicCards]) => (
+                  <div key={topic} style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                    <div onClick={() => toggleTopic(topic)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', cursor: 'pointer', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(155,109,255,0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-purple)', background: 'rgba(155,109,255,0.1)', border: '1px solid rgba(155,109,255,0.2)', padding: '3px 10px', borderRadius: '100px' }}>🤖 AI</span>
+                        <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>{topic}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>({topicCards.length} kártya)</span>
+                      </div>
+                      <span style={{ color: 'var(--muted)', fontSize: '18px', transition: 'transform 0.2s', transform: collapsedTopics[topic] ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▾</span>
+                    </div>
+                    {!collapsedTopics[topic] && (
+                      <div style={{ padding: '0 20px 20px' }}>
+                        <div className="grid-2">
+                          {topicCards.map(card => renderCard(card, true))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Saját kártyák */}
+                {manualCards.length > 0 && (
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                    <div onClick={() => toggleTopic('__manual__')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', cursor: 'pointer', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,142,255,0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-blue)', background: 'rgba(79,142,255,0.1)', border: '1px solid rgba(79,142,255,0.2)', padding: '3px 10px', borderRadius: '100px' }}>✍️ Saját</span>
+                        <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>Manuális kártyák</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>({manualCards.length} kártya)</span>
+                      </div>
+                      <span style={{ color: 'var(--muted)', fontSize: '18px', transition: 'transform 0.2s', transform: collapsedTopics['__manual__'] ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▾</span>
+                    </div>
+                    {!collapsedTopics['__manual__'] && (
+                      <div style={{ padding: '0 20px 20px' }}>
+                        <div className="grid-2">
+                          {manualCards.map(card => renderCard(card, false))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab: Összefoglalók */}
+        {activeTab === 'osszefogl' && (
+          <div>
+            {summaries.length === 0 ? (
+              <div className="empty-state">
+                <div className="emoji">📚</div>
+                <h2>Még nincs összefoglaló</h2>
+                <p>Generálj AI-jal egy témát és automatikusan készül összefoglaló!</p>
+                <button onClick={() => setActiveTab('general')} className="btn btn-primary">✨ Generálás</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
+                {summaries.map((s, i) => (
+                  <div key={i} style={{ background: 'rgba(45,212,160,0.04)', border: '1px solid rgba(45,212,160,0.2)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                    <div onClick={() => toggleSummary(i)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', cursor: 'pointer', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(45,212,160,0.06)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-green)', background: 'rgba(45,212,160,0.1)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>📚 ÖSSZEFOGLALÓ</span>
+                        <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px', color: 'var(--accent-green)' }}>{s.topic}</span>
+                      </div>
+                      <span style={{ color: 'var(--muted)', fontSize: '18px', transition: 'transform 0.2s', transform: collapsedSummaries[i] ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▾</span>
+                    </div>
+                    {!collapsedSummaries[i] && (
+                      <div style={{ padding: '0 20px 20px' }}>
+                        <p style={{ color: 'var(--muted)', fontSize: '14px', lineHeight: 1.8, marginBottom: s.key_points?.length > 0 ? '16px' : '0' }}>{s.summary}</p>
+                        {s.key_points?.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {s.key_points.map((point, j) => (
+                              <span key={j} style={{ fontSize: '12px', color: 'var(--text)', background: 'rgba(45,212,160,0.06)', border: '1px solid rgba(45,212,160,0.15)', padding: '4px 12px', borderRadius: '100px' }}>
+                                ✦ {point}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Generálás */}
+        {activeTab === 'general' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
+
+            {/* AI generálás témából */}
+            <div style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span>🤖</span>
+                <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — Témából</h2>
+              </div>
+              <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát — az AI összefoglalót és 10 kártyát generál!</p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <input className="input" placeholder="pl. Francia forradalom..." value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1, minWidth: '200px' }} />
+                <button onClick={generateWithAI} disabled={aiLoading} className="btn btn-primary">
+                  {aiLoading ? '⏳ Generálás...' : '✨ Generálás'}
+                </button>
+              </div>
+            </div>
+
+            {/* PDF generálás */}
+            <div style={{ background: 'rgba(155,109,255,0.05)', border: '1px solid rgba(155,109,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span>📄</span>
+                <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI generálás — PDF-ből</h2>
+              </div>
+              <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Tölts fel egy PDF-et és az AI automatikusan generál belőle kártyákat!</p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])}
+                  style={{ flex: 1, minWidth: '200px', color: 'var(--muted)', fontSize: '13px' }} />
+                <button onClick={generateFromPDF} disabled={pdfLoading || !pdfFile} className="btn btn-primary"
+                  style={{ background: 'linear-gradient(135deg, var(--accent-purple), #7b4fd4)' }}>
+                  {pdfLoading ? '⏳ Feldolgozás...' : '📄 Generálás'}
+                </button>
+              </div>
+              {pdfFile && <p style={{ color: 'var(--accent-purple)', fontSize: '12px', marginTop: '8px' }}>✓ {pdfFile.name}</p>}
+            </div>
+
+            {/* Manuális kártya */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showForm ? '14px' : '0', cursor: 'pointer' }} onClick={() => setShowForm(!showForm)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>✍️</span>
+                  <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>Manuális kártya hozzáadása</h2>
+                </div>
+                <span style={{ color: 'var(--muted)', fontSize: '18px', transition: 'transform 0.2s', transform: showForm ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+              </div>
+              {showForm && (
+                <div>
+                  <textarea className="input" placeholder="Kérdés" value={question} onChange={e => setQuestion(e.target.value)} style={{ marginBottom: '10px', height: '80px', resize: 'none' }} />
+                  <textarea className="input" placeholder="Válasz" value={answer} onChange={e => setAnswer(e.target.value)} style={{ marginBottom: '14px', height: '80px', resize: 'none' }} />
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button onClick={addCard} className="btn btn-primary">Hozzáadás</button>
+                    <button onClick={() => setShowForm(false)} className="btn btn-ghost">Mégse</button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
