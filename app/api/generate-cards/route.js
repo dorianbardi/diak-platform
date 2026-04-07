@@ -11,8 +11,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Téma megadása kötelező' }, { status: 400 })
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
-
     const prompt = `Generálj ${count} flashcardot a következő témához: "${topic}".
     
 Válaszolj CSAK JSON formátumban, semmi más szöveg nélkül, ne használj markdown backtick-eket:
@@ -22,10 +20,22 @@ Válaszolj CSAK JSON formátumban, semmi más szöveg nélkül, ne használj mar
 
 A kérdések legyenek rövidek és konkrétak. A válaszok legyenek tömörek. Magyarul válaszolj!`
 
-    const result = await model.generateContent(prompt)
+    const modelNames = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']
+    let result
+
+    for (const modelName of modelNames) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName })
+        result = await model.generateContent(prompt)
+        break
+      } catch (e) {
+        if (modelName === modelNames[modelNames.length - 1]) throw e
+        continue
+      }
+    }
+
     const text = result.response.text().trim()
     const cards = JSON.parse(text)
-
     return NextResponse.json({ cards })
 
   } catch (e) {
