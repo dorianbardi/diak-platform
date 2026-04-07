@@ -61,56 +61,49 @@ export default function DeckPage() {
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-
       <div className="orb orb-1" /><div className="orb orb-2" />
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: `linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
 
-      {/* Lebegő alakzatok */}
-      <div style={{ position: 'fixed', top: '20%', right: '5%', width: '60px', height: '60px', border: '1px solid rgba(79,142,255,0.12)', borderRadius: '14px', transform: 'rotate(20deg)', animation: 'float 7s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', bottom: '25%', left: '4%', width: '45px', height: '45px', border: '1px solid rgba(155,109,255,0.15)', borderRadius: '50%', animation: 'float 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', top: '60%', right: '6%', width: '35px', height: '35px', background: 'rgba(45,212,160,0.05)', border: '1px solid rgba(45,212,160,0.15)', transform: 'rotate(45deg)', animation: 'float 8s ease-in-out infinite 1s', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', top: '20%', right: '5%', width: 'clamp(40px, 5vw, 60px)', height: 'clamp(40px, 5vw, 60px)', border: '1px solid rgba(79,142,255,0.12)', borderRadius: '14px', transform: 'rotate(20deg)', animation: 'float 7s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', bottom: '25%', left: '4%', width: 'clamp(28px, 3vw, 45px)', height: 'clamp(28px, 3vw, 45px)', border: '1px solid rgba(155,109,255,0.15)', borderRadius: '50%', animation: 'float 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
 
-      {/* Navbar */}
-      <nav style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 48px', height: '72px', background: 'rgba(8,11,20,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link href="/dashboard/flashcards" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: '13px' }}>← Vissza</Link>
-          <span style={{ color: 'var(--border)' }}>|</span>
-          <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px' }}>{deck?.name || '...'}</span>
+      <nav className="nav-bar">
+        <div className="nav-back">
+          <Link href="/dashboard/flashcards">← Vissza</Link>
+          <span className="nav-divider hide-mobile">|</span>
+          <span className="nav-title hide-mobile">{deck?.name || '...'}</span>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {cards.length > 0 && (
             <Link href={`/dashboard/flashcards/${deckId}/study`} style={{ textDecoration: 'none' }}>
-              <button className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>🧠 Tanulás</button>
+              <button className="btn btn-primary" style={{ padding: '10px 16px', fontSize: '13px' }}>🧠 Tanulás</button>
             </Link>
           )}
-          <button onClick={() => setShowForm(!showForm)} className="btn btn-ghost" style={{ padding: '10px 20px', fontSize: '14px' }}>+ Új kártya</button>
+          <button onClick={() => setShowForm(!showForm)} className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>+ Kártya</button>
         </div>
       </nav>
 
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: '60px 48px' }}>
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
 
-        {/* Header */}
-        <div className="animate-fade-up delay-1" style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--accent-blue)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>✦ Kártyacsomag</div>
-          <h1 style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(28px, 4vw, 48px)', letterSpacing: '-1.5px', marginBottom: '8px' }}>{deck?.name}</h1>
-          {deck?.description && <p style={{ color: 'var(--muted)', fontSize: '15px' }}>{deck.description}</p>}
-          <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', padding: '6px 14px', borderRadius: '100px' }}>
-              {cards.length} kártya
-            </span>
-          </div>
+        <div className="animate-fade-up delay-1" style={{ marginBottom: '32px' }}>
+          <div className="section-label" style={{ color: 'var(--accent-blue)' }}>✦ Kártyacsomag</div>
+          <h1 className="section-title">{deck?.name}</h1>
+          {deck?.description && <p className="section-desc">{deck.description}</p>}
+          <span style={{ display: 'inline-block', marginTop: '12px', fontSize: '13px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', padding: '4px 12px', borderRadius: '100px' }}>
+            {cards.length} kártya
+          </span>
         </div>
 
         {/* AI generálás */}
-        <div className="animate-fade-up delay-2" style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: '20px', padding: '28px 32px', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '18px' }}>🤖</span>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px' }}>AI kártyagenerálás</h2>
+        <div className="animate-fade-up delay-2" style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span>🤖</span>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>AI kártyagenerálás</h2>
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '16px' }}>Írj be egy témát és az AI generál 10 kártyát automatikusan.</p>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <input className="input" placeholder="pl. Francia forradalom, Másodfokú egyenletek..." value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1 }} />
-            <button onClick={generateWithAI} disabled={aiLoading} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '12px' }}>Írj be egy témát és az AI generál 10 kártyát automatikusan.</p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <input className="input" placeholder="pl. Francia forradalom..." value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1, minWidth: '200px' }} />
+            <button onClick={generateWithAI} disabled={aiLoading} className="btn btn-primary">
               {aiLoading ? '⏳ Generálás...' : '✨ Generálás'}
             </button>
           </div>
@@ -118,11 +111,11 @@ export default function DeckPage() {
 
         {/* Új kártya form */}
         {showForm && (
-          <div className="animate-fade-up delay-1" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px 32px', marginBottom: '24px' }}>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', marginBottom: '16px' }}>Új kártya</h2>
-            <textarea className="input" placeholder="Kérdés" value={question} onChange={e => setQuestion(e.target.value)} style={{ marginBottom: '12px', height: '90px', resize: 'none' }} />
-            <textarea className="input" placeholder="Válasz" value={answer} onChange={e => setAnswer(e.target.value)} style={{ marginBottom: '16px', height: '90px', resize: 'none' }} />
-            <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="animate-fade-up delay-1" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 'var(--gap)' }}>
+            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px', marginBottom: '14px' }}>Új kártya</h2>
+            <textarea className="input" placeholder="Kérdés" value={question} onChange={e => setQuestion(e.target.value)} style={{ marginBottom: '10px', height: '80px', resize: 'none' }} />
+            <textarea className="input" placeholder="Válasz" value={answer} onChange={e => setAnswer(e.target.value)} style={{ marginBottom: '14px', height: '80px', resize: 'none' }} />
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button onClick={addCard} className="btn btn-primary">Hozzáadás</button>
               <button onClick={() => setShowForm(false)} className="btn btn-ghost">Mégse</button>
             </div>
@@ -133,33 +126,34 @@ export default function DeckPage() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px', color: 'var(--muted)' }}>Betöltés...</div>
         ) : cards.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '100px 48px' }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>📭</div>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '22px', marginBottom: '12px' }}>Még nincs kártya</h2>
-            <p style={{ color: 'var(--muted)', marginBottom: '32px' }}>Adj hozzá kártyákat vagy generálj AI-jal!</p>
+          <div className="empty-state">
+            <div className="emoji">📭</div>
+            <h2>Még nincs kártya</h2>
+            <p>Adj hozzá kártyákat vagy generálj AI-jal!</p>
           </div>
         ) : (
-          <div className="animate-fade-up delay-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="animate-fade-up delay-3 grid-2">
             {cards.map(card => (
               <div key={card.id} onClick={() => toggleFlip(card.id)} style={{
                 background: flipped[card.id] ? 'rgba(79,142,255,0.08)' : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${flipped[card.id] ? 'rgba(79,142,255,0.3)' : 'var(--border)'}`,
-                borderRadius: '20px', padding: '28px', cursor: 'pointer',
-                minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)',
+                cursor: 'pointer', minHeight: '130px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 transition: 'all 0.3s',
               }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(79,142,255,0.3)'}
+                onMouseEnter={e => { if (!flipped[card.id]) e.currentTarget.style.borderColor = 'rgba(79,142,255,0.3)' }}
                 onMouseLeave={e => { if (!flipped[card.id]) e.currentTarget.style.borderColor = 'var(--border)' }}
               >
                 <div>
-                  <div style={{ fontSize: '11px', color: flipped[card.id] ? 'var(--accent-blue)' : 'var(--muted)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px', fontWeight: 600 }}>
+                  <div style={{ fontSize: '11px', color: flipped[card.id] ? 'var(--accent-blue)' : 'var(--muted)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>
                     {flipped[card.id] ? 'VÁLASZ' : 'KÉRDÉS'}
                   </div>
-                  <p style={{ fontSize: '15px', lineHeight: 1.6 }}>{flipped[card.id] ? card.answer : card.question}</p>
+                  <p style={{ fontSize: 'clamp(13px, 1.5vw, 15px)', lineHeight: 1.6 }}>{flipped[card.id] ? card.answer : card.question}</p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
                   <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Kattints a forgatáshoz</span>
-                  <button onClick={e => { e.stopPropagation(); deleteCard(card.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '14px', opacity: 0.4, transition: 'opacity 0.2s' }}
+                  <button onClick={e => { e.stopPropagation(); deleteCard(card.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, transition: 'opacity 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.opacity = 1}
                     onMouseLeave={e => e.currentTarget.style.opacity = 0.4}
                   >🗑️</button>
