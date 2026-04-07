@@ -61,8 +61,8 @@ export default async function Home() {
         </div>
 
         <h1 className="animate-fade-up delay-2" style={{ fontFamily: 'Geist', fontWeight: 800, lineHeight: 1.02, fontSize: 'clamp(36px, 8vw, 96px)', marginBottom: '24px', maxWidth: '1000px', letterSpacing: '-2px' }}>
-          Tanulj okosabban.<br />
-          <span className="gradient-text">Érd el a céljaid.</span>
+          Tanulj okosabban!<br />
+          <span className="gradient-text">Érd el a céljaid!</span>
         </h1>
 
         <p className="animate-fade-up delay-3" style={{ fontSize: 'clamp(15px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '500px', lineHeight: 1.8, marginBottom: '40px' }}>
