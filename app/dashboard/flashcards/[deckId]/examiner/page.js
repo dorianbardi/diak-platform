@@ -50,28 +50,38 @@ export default function ExaminerPage() {
   }
 
   async function evaluateAnswer() {
-    if (!userAnswer.trim()) return
-    setAiLoading(true)
-    try {
-      const res = await fetch('/api/examiner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'evaluate',
-          question: currentQuestion.question,
-          correctAnswer: currentQuestion.correctAnswer,
-          userAnswer,
-        }),
-      })
-      const data = await res.json()
-      if (data.error) { alert('Hiba: ' + data.error); return }
-      setEvaluation(data)
-      setResults(prev => [...prev, { ...currentQuestion, userAnswer, ...data }])
-      setQuestionCount(prev => prev + 1)
-      setPhase('evaluate')
-    } catch (e) { console.error(e) }
-    setAiLoading(false)
-  }
+  if (!userAnswer.trim()) return
+  setAiLoading(true)
+
+  // Streak + XP frissítése
+  try {
+    await fetch('/api/streak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    })
+  } catch (e) { console.error(e) }
+
+  try {
+    const res = await fetch('/api/examiner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'evaluate',
+        question: currentQuestion.question,
+        correctAnswer: currentQuestion.correctAnswer,
+        userAnswer,
+      }),
+    })
+    const data = await res.json()
+    if (data.error) { alert('Hiba: ' + data.error); return }
+    setEvaluation(data)
+    setResults(prev => [...prev, { ...currentQuestion, userAnswer, ...data }])
+    setQuestionCount(prev => prev + 1)
+    setPhase('evaluate')
+  } catch (e) { console.error(e) }
+  setAiLoading(false)
+}
 
   function nextQuestion() {
     if (questionCount >= maxQuestions) {

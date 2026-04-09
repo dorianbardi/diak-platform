@@ -45,14 +45,23 @@ export default function StudyPage() {
   }
 
   async function rate(quality, label) {
-    const card = cards[current]
-    const updated = calculateNextReview(card, quality)
-    await supabase.from('flashcards').update(updated).eq('id', card.id)
-    setStats(prev => ({ ...prev, [label]: prev[label] + 1 }))
-    setFlipped(false)
-    if (current + 1 >= cards.length) setDone(true)
-    else setCurrent(prev => prev + 1)
-  }
+  // Streak + XP frissítése
+  try {
+    await fetch('/api/streak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    })
+  } catch (e) { console.error(e) }
+
+  const card = cards[current]
+  const updated = calculateNextReview(card, quality)
+  await supabase.from('flashcards').update(updated).eq('id', card.id)
+  setStats(prev => ({ ...prev, [label]: prev[label] + 1 }))
+  setFlipped(false)
+  if (current + 1 >= cards.length) setDone(true)
+  else setCurrent(prev => prev + 1)
+}
 
   if (loading) return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
