@@ -11,6 +11,19 @@ const features = [
   { href: '/dashboard/koltsegvetes', icon: '💰', title: 'Költségvetés', desc: 'Bevételek és kiadások kezelése', accent: '#9b6dff', border: 'rgba(155,109,255,0.2)', bg: 'rgba(155,109,255,0.05)', shape: 'hex' },
 ]
 
+const ALL_BADGES = [
+  { id: 'first_study', icon: '🌱', title: 'Első lépés', desc: 'Először tanultál!' },
+  { id: 'streak_3', icon: '🔥', title: '3 napos streak', desc: '3 egymás utáni nap tanultál!' },
+  { id: 'streak_7', icon: '⚡', title: 'Heti bajnok', desc: '7 egymás utáni nap tanultál!' },
+  { id: 'streak_14', icon: '💫', title: 'Két hetes', desc: '14 egymás utáni nap tanultál!' },
+  { id: 'streak_30', icon: '👑', title: 'Havi bajnok', desc: '30 egymás utáni nap tanultál!' },
+  { id: 'xp_100', icon: '⭐', title: '100 XP', desc: 'Elérted a 100 XP-t!' },
+  { id: 'xp_500', icon: '🌟', title: '500 XP', desc: 'Elérted az 500 XP-t!' },
+  { id: 'xp_1000', icon: '💎', title: '1000 XP', desc: 'Elérted az 1000 XP-t!' },
+  { id: 'level_3', icon: '🎓', title: 'Haladó', desc: 'Elérted a 3. szintet!' },
+  { id: 'level_5', icon: '🏆', title: 'Mester', desc: 'Elérted az 5. szintet!' },
+]
+
 function Clock() {
   const [time, setTime] = useState('')
   useEffect(() => {
@@ -50,16 +63,17 @@ function getStreakMessage(streak) {
 
 export default function Dashboard() {
   const { user } = useUser()
-  const [stats, setStats] = useState({ streak: 0, xp: 0, longest_streak: 0 })
+  const [stats, setStats] = useState({ streak: 0, xp: 0, longest_streak: 0, level: 1, badges: [] })
   const [statsLoading, setStatsLoading] = useState(true)
+  const [newBadge, setNewBadge] = useState(null)
 
- useEffect(() => {
-  if (user) {
-    fetchStats()
-    window.addEventListener('focus', fetchStats)
-    return () => window.removeEventListener('focus', fetchStats)
-  }
-}, [user])
+  useEffect(() => {
+    if (user) {
+      fetchStats()
+      window.addEventListener('focus', fetchStats)
+      return () => window.removeEventListener('focus', fetchStats)
+    }
+  }, [user])
 
   async function fetchStats() {
     try {
@@ -71,7 +85,8 @@ export default function Dashboard() {
   }
 
   const levelInfo = getLevel(stats.xp)
-  const xpProgress = ((stats.xp % (levelInfo.next - (levelInfo.level === 1 ? 0 : levelInfo.next / 2))) / (levelInfo.next / levelInfo.level)) * 100
+  const earnedBadges = ALL_BADGES.filter(b => (stats.badges || []).includes(b.id))
+  const unearnedBadges = ALL_BADGES.filter(b => !(stats.badges || []).includes(b.id))
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -121,19 +136,16 @@ export default function Dashboard() {
         </div>
 
         {/* Streak + XP kijelző */}
-        <div className="animate-fade-up delay-2" style={{ marginBottom: '32px' }}>
+        <div className="animate-fade-up delay-2" style={{ marginBottom: 'var(--gap)' }}>
           <div style={{ background: 'linear-gradient(135deg, rgba(245,200,66,0.08), rgba(255,107,107,0.05))', border: '1px solid rgba(245,200,66,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(24px, 3vw, 40px)', position: 'relative', overflow: 'hidden' }}>
-
-            {/* Dekoratív háttér */}
             <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,200,66,0.15), transparent)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,107,0.1), transparent)', pointerEvents: 'none' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
-
               {/* Streak */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <div style={{ position: 'relative' }}>
-                  <div style={{ fontSize: 'clamp(48px, 8vw, 80px)', lineHeight: 1, filter: stats.streak > 0 ? 'drop-shadow(0 0 20px rgba(245,200,66,0.6))' : 'none', transition: 'filter 0.3s' }}>🔥</div>
+                  <div style={{ fontSize: 'clamp(48px, 8vw, 80px)', lineHeight: 1, filter: stats.streak > 0 ? 'drop-shadow(0 0 20px rgba(245,200,66,0.6))' : 'none' }}>🔥</div>
                   {stats.streak > 0 && (
                     <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #f5c842, #ff6b6b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: 'white' }}>
                       {stats.streak > 99 ? '∞' : stats.streak}
@@ -149,7 +161,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Elválasztó */}
               <div style={{ width: '1px', height: '80px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} className="hide-mobile" />
 
               {/* XP + Szint */}
@@ -162,8 +173,6 @@ export default function Dashboard() {
                   </div>
                   <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px', color: '#f5c842' }}>{statsLoading ? '...' : stats.xp} XP</span>
                 </div>
-
-                {/* XP progress bar */}
                 <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '100px', height: '8px', overflow: 'hidden', marginBottom: '6px' }}>
                   <div style={{ height: '100%', background: 'linear-gradient(90deg, #f5c842, #ff9f43)', borderRadius: '100px', width: `${Math.min((stats.xp / levelInfo.next) * 100, 100)}%`, transition: 'width 0.6s ease', boxShadow: '0 0 10px rgba(245,200,66,0.5)' }} />
                 </div>
@@ -183,6 +192,41 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Badge-ek */}
+        {earnedBadges.length > 0 && (
+          <div className="animate-fade-up delay-2" style={{ marginBottom: 'var(--gap)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#f5c842' }}>🏆 Megszerzett jelvények</span>
+              <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(245,200,66,0.4), transparent)' }} />
+              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{earnedBadges.length}/{ALL_BADGES.length}</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {earnedBadges.map(badge => (
+                <div key={badge.id} style={{ background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.25)', borderRadius: '14px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'transform 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <span style={{ fontSize: '24px' }}>{badge.icon}</span>
+                  <div>
+                    <div style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '13px', color: '#f5c842' }}>{badge.title}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{badge.desc}</div>
+                  </div>
+                </div>
+              ))}
+              {/* Zárt badge-ek */}
+              {unearnedBadges.map(badge => (
+                <div key={badge.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.4 }}>
+                  <span style={{ fontSize: '24px', filter: 'grayscale(1)' }}>{badge.icon}</span>
+                  <div>
+                    <div style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '13px', color: 'var(--muted)' }}>{badge.title}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>🔒 Még nem szerzted meg</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Feature kártyák */}
         <div className="animate-fade-up delay-3 grid-2">
           {features.map((f, i) => (
@@ -195,7 +239,6 @@ export default function Dashboard() {
                 {f.shape === 'square' && <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '70px', height: '70px', border: `1px solid ${f.border}`, borderRadius: '12px', transform: 'rotate(20deg)', opacity: 0.5 }} />}
                 {f.shape === 'triangle' && <div style={{ position: 'absolute', top: '12px', right: '12px', width: 0, height: 0, borderLeft: '30px solid transparent', borderRight: '30px solid transparent', borderBottom: `52px solid ${f.bg}`, opacity: 0.8 }} />}
                 {f.shape === 'hex' && <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '64px', height: '64px', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', background: f.border, opacity: 0.3 }} />}
-
                 <div style={{ position: 'relative', zIndex: 1 }}>
                   <div style={{ fontSize: 'clamp(24px, 3vw, 32px)', marginBottom: '16px', display: 'inline-flex', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: `1px solid ${f.border}` }}>{f.icon}</div>
                   <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: 'clamp(16px, 2vw, 20px)', color: f.accent, marginBottom: '6px' }}>{f.title}</h2>
