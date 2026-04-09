@@ -30,8 +30,44 @@ function greeting() {
   return 'Jó estét'
 }
 
+function getLevel(xp) {
+  if (xp < 100) return { level: 1, title: 'Kezdő', next: 100 }
+  if (xp < 300) return { level: 2, title: 'Tanuló', next: 300 }
+  if (xp < 600) return { level: 3, title: 'Haladó', next: 600 }
+  if (xp < 1000) return { level: 4, title: 'Tudós', next: 1000 }
+  if (xp < 2000) return { level: 5, title: 'Mester', next: 2000 }
+  return { level: 6, title: 'Legenda', next: 9999 }
+}
+
+function getStreakMessage(streak) {
+  if (streak === 0) return 'Kezdj el tanulni!'
+  if (streak < 3) return 'Szép kezdet!'
+  if (streak < 7) return 'Így tovább!'
+  if (streak < 14) return 'Fantasztikus!'
+  if (streak < 30) return 'Elképesztő!'
+  return 'Legendás! 🏆'
+}
+
 export default function Dashboard() {
   const { user } = useUser()
+  const [stats, setStats] = useState({ streak: 0, xp: 0, longest_streak: 0 })
+  const [statsLoading, setStatsLoading] = useState(true)
+
+  useEffect(() => {
+    if (user) fetchStats()
+  }, [user])
+
+  async function fetchStats() {
+    try {
+      const res = await fetch(`/api/streak?user_id=${user.id}`)
+      const data = await res.json()
+      setStats(data)
+    } catch (e) { console.error(e) }
+    setStatsLoading(false)
+  }
+
+  const levelInfo = getLevel(stats.xp)
+  const xpProgress = ((stats.xp % (levelInfo.next - (levelInfo.level === 1 ? 0 : levelInfo.next / 2))) / (levelInfo.next / levelInfo.level)) * 100
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -68,7 +104,8 @@ export default function Dashboard() {
 
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
 
-        <div className="animate-fade-up delay-1" style={{ marginBottom: '48px' }}>
+        {/* Üdvözlés */}
+        <div className="animate-fade-up delay-1" style={{ marginBottom: '32px' }}>
           <div className="section-label" style={{ color: 'var(--accent-blue)' }}>✦ Dashboard</div>
           <h1 style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(32px, 5vw, 64px)', letterSpacing: '-2px', lineHeight: 1.05, marginBottom: '12px' }}>
             {greeting()},<br />
@@ -79,7 +116,71 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="animate-fade-up delay-2 grid-2">
+        {/* Streak + XP kijelző */}
+        <div className="animate-fade-up delay-2" style={{ marginBottom: '32px' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(245,200,66,0.08), rgba(255,107,107,0.05))', border: '1px solid rgba(245,200,66,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(24px, 3vw, 40px)', position: 'relative', overflow: 'hidden' }}>
+
+            {/* Dekoratív háttér */}
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,200,66,0.15), transparent)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,107,0.1), transparent)', pointerEvents: 'none' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
+
+              {/* Streak */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ fontSize: 'clamp(48px, 8vw, 80px)', lineHeight: 1, filter: stats.streak > 0 ? 'drop-shadow(0 0 20px rgba(245,200,66,0.6))' : 'none', transition: 'filter 0.3s' }}>🔥</div>
+                  {stats.streak > 0 && (
+                    <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #f5c842, #ff6b6b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: 'white' }}>
+                      {stats.streak > 99 ? '∞' : stats.streak}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(40px, 7vw, 72px)', lineHeight: 1, letterSpacing: '-3px', background: 'linear-gradient(135deg, #f5c842, #ff9f43)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {statsLoading ? '...' : stats.streak}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>napos streak</div>
+                  <div style={{ fontSize: '12px', color: '#f5c842', fontWeight: 600, marginTop: '2px' }}>{getStreakMessage(stats.streak)}</div>
+                </div>
+              </div>
+
+              {/* Elválasztó */}
+              <div style={{ width: '1px', height: '80px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} className="hide-mobile" />
+
+              {/* XP + Szint */}
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>⚡</span>
+                    <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>{levelInfo.title}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--accent-blue)', background: 'rgba(79,142,255,0.1)', border: '1px solid rgba(79,142,255,0.2)', padding: '2px 8px', borderRadius: '100px', fontWeight: 600 }}>Szint {levelInfo.level}</span>
+                  </div>
+                  <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px', color: '#f5c842' }}>{statsLoading ? '...' : stats.xp} XP</span>
+                </div>
+
+                {/* XP progress bar */}
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '100px', height: '8px', overflow: 'hidden', marginBottom: '6px' }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg, #f5c842, #ff9f43)', borderRadius: '100px', width: `${Math.min((stats.xp / levelInfo.next) * 100, 100)}%`, transition: 'width 0.6s ease', boxShadow: '0 0 10px rgba(245,200,66,0.5)' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{stats.xp} XP</span>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{levelInfo.next} XP a következő szinthez</span>
+                </div>
+              </div>
+
+              {/* Leghosszabb streak */}
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 40px)', color: 'var(--muted)', letterSpacing: '-1px' }}>{statsLoading ? '...' : stats.longest_streak}</div>
+                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>leghosszabb</div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', opacity: 0.6 }}>streak</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature kártyák */}
+        <div className="animate-fade-up delay-3 grid-2">
           {features.map((f, i) => (
             <Link key={i} href={f.href} style={{ textDecoration: 'none' }}>
               <div style={{ background: f.bg, border: `1px solid ${f.border}`, borderRadius: 'var(--radius)', padding: 'clamp(24px, 3vw, 36px) clamp(20px, 3vw, 40px)', position: 'relative', overflow: 'hidden', transition: 'transform 0.25s, box-shadow 0.25s', cursor: 'pointer', height: '100%' }}
@@ -104,7 +205,8 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <div className="animate-fade-up delay-3" style={{ marginTop: 'var(--gap)', background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.15)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 36px)', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+        {/* Napi tipp */}
+        <div className="animate-fade-up delay-4" style={{ marginTop: 'var(--gap)', background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.15)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 36px)', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
           <div style={{ fontSize: '24px', flexShrink: 0 }}>💡</div>
           <div>
             <div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '14px' }}>Napi tipp</div>
