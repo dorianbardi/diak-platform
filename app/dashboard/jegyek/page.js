@@ -213,17 +213,17 @@ export default function JegyekPage() {
           <div className="animate-fade-up delay-1" style={{ background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)', marginBottom: 'var(--gap)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,200,66,0.15), transparent)', pointerEvents: 'none' }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '20px' }}>🤖</span>
-              <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px' }}>AI Előrejelzés</h2>
-              <span style={{ fontSize: '11px', color: '#f5c842', background: 'rgba(245,200,66,0.1)', border: '1px solid rgba(245,200,66,0.2)', padding: '2px 10px', borderRadius: '100px', fontWeight: 600 }}>
-                Előrejelzett átlag: {analysis.predicted_average}
-              </span>
-              <button onClick={() => setShowAnalysis(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '18px', opacity: 0.5, transition: 'opacity 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
-              >✕</button>
-            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+  <span style={{ fontSize: '20px' }}>🤖</span>
+  <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px' }}>AI Előrejelzés</h2>
+  <span style={{ fontSize: '11px', color: '#f5c842', background: 'rgba(245,200,66,0.1)', border: '1px solid rgba(245,200,66,0.2)', padding: '2px 10px', borderRadius: '100px', fontWeight: 600 }}>
+    Előrejelzett átlag: {analysis.predicted_average}
+  </span>
+  <button onClick={() => setShowAnalysis(false)} style={{ marginLeft: 'auto', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: 'var(--text)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,107,0.15)'}
+    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+  >✕</button>
+</div>
 
             <p style={{ color: 'var(--muted)', fontSize: '14px', lineHeight: 1.7, marginBottom: '16px' }}>{analysis.overall_analysis}</p>
 
