@@ -53,9 +53,13 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ streak: 0, xp: 0, longest_streak: 0 })
   const [statsLoading, setStatsLoading] = useState(true)
 
-  useEffect(() => {
-    if (user) fetchStats()
-  }, [user])
+ useEffect(() => {
+  if (user) {
+    fetchStats()
+    window.addEventListener('focus', fetchStats)
+    return () => window.removeEventListener('focus', fetchStats)
+  }
+}, [user])
 
   async function fetchStats() {
     try {
