@@ -178,11 +178,14 @@ export default async function Home() {
 
       {/* Footer */}
       <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', padding: 'clamp(20px, 2vw, 32px) var(--pad-x)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '18px' }}>
-          <span className="gradient-text">Diák</span>Platform <span style={{ color: 'var(--accent-blue)' }}>✦</span>
-        </div>
-        <span style={{ color: 'var(--muted)', fontSize: '13px' }}>© 2026 — Minden jog fenntartva</span>
-      </footer>
+  <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '18px' }}>
+    <span className="gradient-text">Diák</span>Platform <span style={{ color: 'var(--accent-blue)' }}>✦</span>
+  </div>
+  <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+    <a href="/privacy" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Adatvédelmi tájékoztató</a>
+    <span style={{ color: 'var(--muted)', fontSize: '13px' }}>© 2026 — Minden jog fenntartva</span>
+  </div>
+</footer>
     </div>
   )
 }
