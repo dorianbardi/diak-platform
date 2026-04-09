@@ -41,19 +41,6 @@ export default function RootLayout({ children }) {
         <body className={`${geist.variable} antialiased`}>
           {children}
           <Analytics />
-        </body>
-      </html>
-    </ClerkProvider>
-  )
-}
-
-export default function RootLayout({ children }) {
-  return (
-    <ClerkProvider>
-      <html lang="hu">
-        <body className={`${geist.variable} antialiased`}>
-          {children}
-          <Analytics />
           <CookieBanner />
         </body>
       </html>
