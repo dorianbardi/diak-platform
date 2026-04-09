@@ -61,13 +61,13 @@ export default function UtemtervPage() {
   }
 
   async function toggleDay(exam, dayIndex) {
-    const completed = exam.completed_days || []
-    const newCompleted = completed.includes(dayIndex)
-      ? completed.filter(d => d !== dayIndex)
-      : [...completed, dayIndex]
-    await supabase.from('exams').update({ completed_days: newCompleted }).eq('id', exam.id)
-    fetchExams()
-  }
+  const completed = (exam.completed_days || []).map(Number)
+  const newCompleted = completed.includes(dayIndex)
+    ? completed.filter(d => d !== dayIndex)
+    : [...completed, dayIndex]
+  await supabase.from('exams').update({ completed_days: newCompleted }).eq('id', exam.id)
+  fetchExams()
+}
 
   function getDaysLeft(examDate) {
     const today = new Date(); today.setHours(0, 0, 0, 0)
