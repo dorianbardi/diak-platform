@@ -16,8 +16,59 @@ export default function UtemtervPage() {
   const [hoursPerDay, setHoursPerDay] = useState(1)
   const [generatingPlan, setGeneratingPlan] = useState(null)
   const [expandedPlan, setExpandedPlan] = useState(null)
+  const [calendarConnected, setCalendarConnected] = useState(false)
+  const [addingToCalendar, setAddingToCalendar] = useState(null)
+  const [calendarSuccess, setCalendarSuccess] = useState(null)
 
-  useEffect(() => { if (user) fetchExams() }, [user])
+  useEffect(() => {
+    if (user) {
+      fetchExams()
+      checkCalendarConnection()
+      // Ha visszajött a Google OAuth-ból
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('calendar') === 'connected') {
+        setCalendarConnected(true)
+        window.history.replaceState({}, '', '/dashboard/utemterv')
+      }
+    }
+  }, [user])
+
+  async function checkCalendarConnection() {
+    try {
+      const res = await fetch('/api/calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, action: 'check_connection' }),
+      })
+      const data = await res.json()
+      setCalendarConnected(data.connected)
+    } catch (e) { console.error(e) }
+  }
+
+  async function connectCalendar() {
+    window.location.href = `/api/auth/google?state=${user.id}`
+  }
+
+  async function addToCalendar(exam) {
+    setAddingToCalendar(exam.id)
+    try {
+      const res = await fetch('/api/calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          action: 'add_exam',
+          exam,
+          studyPlan: exam.study_plan,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { alert('Hiba: ' + data.error); return }
+      setCalendarSuccess(exam.id)
+      setTimeout(() => setCalendarSuccess(null), 3000)
+    } catch (e) { console.error(e); alert('Váratlan hiba!') }
+    setAddingToCalendar(null)
+  }
 
   async function fetchExams() {
     const { data } = await supabase.from('exams').select('*').eq('user_id', user.id).order('exam_date', { ascending: true })
@@ -61,13 +112,13 @@ export default function UtemtervPage() {
   }
 
   async function toggleDay(exam, dayIndex) {
-  const completed = (exam.completed_days || []).map(Number)
-  const newCompleted = completed.includes(dayIndex)
-    ? completed.filter(d => d !== dayIndex)
-    : [...completed, dayIndex]
-  await supabase.from('exams').update({ completed_days: newCompleted }).eq('id', exam.id)
-  fetchExams()
-}
+    const completed = (exam.completed_days || []).map(Number)
+    const newCompleted = completed.includes(dayIndex)
+      ? completed.filter(d => d !== dayIndex)
+      : [...completed, dayIndex]
+    await supabase.from('exams').update({ completed_days: newCompleted }).eq('id', exam.id)
+    fetchExams()
+  }
 
   function getDaysLeft(examDate) {
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -94,9 +145,21 @@ export default function UtemtervPage() {
           <span className="nav-divider hide-mobile">|</span>
           <span className="nav-title hide-mobile">📅 Tanulási ütemterv</span>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary" style={{ padding: '10px 20px' }}>
-          + Új vizsga
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Google Calendar kapcsolat */}
+          {calendarConnected ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#2dd4a0', background: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.2)', padding: '8px 14px', borderRadius: '12px' }}>
+              <span>✓</span> Google Calendar
+            </div>
+          ) : (
+            <button onClick={connectCalendar} className="btn btn-ghost" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              📅 Google Calendar
+            </button>
+          )}
+          <button onClick={() => setShowForm(!showForm)} className="btn btn-primary" style={{ padding: '10px 20px' }}>
+            + Új vizsga
+          </button>
+        </div>
       </nav>
 
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
@@ -106,6 +169,22 @@ export default function UtemtervPage() {
           <h1 className="section-title">Tanulási ütemterv</h1>
           <p className="section-desc">Add meg a vizsgáidat — az AI részletes napi tervet készít!</p>
         </div>
+
+        {/* Calendar banner ha nincs kapcsolat */}
+        {!calendarConnected && (
+          <div className="animate-fade-up delay-1" style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: 'var(--radius)', padding: '16px 20px', marginBottom: 'var(--gap)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}>📅</span>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '2px' }}>Kösd össze a Google Calendart!</div>
+                <div style={{ color: 'var(--muted)', fontSize: '13px' }}>A vizsgák és tanulási napok automatikusan bekerülnek a naptáradba.</div>
+              </div>
+            </div>
+            <button onClick={connectCalendar} className="btn btn-primary" style={{ fontSize: '13px', flexShrink: 0 }}>
+              🔗 Összekötés
+            </button>
+          </div>
+        )}
 
         {showForm && (
           <div className="animate-fade-up delay-1" style={{ background: 'rgba(45,212,160,0.05)', border: '1px solid rgba(45,212,160,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(24px, 3vw, 36px)', marginBottom: 'var(--gap)' }}>
@@ -158,7 +237,6 @@ export default function UtemtervPage() {
                         <span style={{ margin: '0 6px', opacity: 0.3 }}>·</span>
                         {exam.hours_per_day} óra/nap
                       </p>
-                      {/* Témák */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
                         {exam.topics.map((topic, i) => (
                           <span key={i} style={{ fontSize: '12px', color: '#2dd4a0', background: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>{topic}</span>
@@ -166,7 +244,7 @@ export default function UtemtervPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, flexWrap: 'wrap' }}>
                       <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '14px', padding: 'clamp(10px, 1.5vw, 16px) clamp(16px, 2vw, 24px)', textAlign: 'center' }}>
                         <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(20px, 3vw, 32px)', color: s.color, lineHeight: 1 }}>
                           {daysLeft <= 0 ? '⚠️' : daysLeft}
@@ -176,14 +254,31 @@ export default function UtemtervPage() {
                         </div>
                       </div>
 
-                      {/* AI terv gomb */}
+                      {/* Google Calendar gomb */}
+                      {calendarConnected && (
+                        <button
+                          onClick={() => addToCalendar(exam)}
+                          disabled={addingToCalendar === exam.id}
+                          style={{
+                            background: calendarSuccess === exam.id ? 'rgba(45,212,160,0.1)' : 'rgba(79,142,255,0.08)',
+                            border: `1px solid ${calendarSuccess === exam.id ? 'rgba(45,212,160,0.3)' : 'rgba(79,142,255,0.2)'}`,
+                            borderRadius: '12px', padding: '8px 14px', cursor: 'pointer',
+                            color: calendarSuccess === exam.id ? '#2dd4a0' : 'var(--accent-blue)',
+                            fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                          }}
+                        >
+                          {addingToCalendar === exam.id ? '⏳' : calendarSuccess === exam.id ? '✓ Hozzáadva!' : '📅 Naptárba'}
+                        </button>
+                      )}
+
                       {!plan ? (
                         <button onClick={() => generatePlan(exam)} disabled={generatingPlan === exam.id} className="btn btn-primary" style={{ fontSize: '13px', padding: '10px 16px' }}>
                           {generatingPlan === exam.id ? '⏳ Generálás...' : '🤖 AI Terv'}
                         </button>
                       ) : (
                         <button onClick={() => setExpandedPlan(isExpanded ? null : exam.id)} className="btn btn-ghost" style={{ fontSize: '13px', padding: '10px 16px' }}>
-                          {isExpanded ? '▲ Bezár' : '📋 Terv megtekintése'}
+                          {isExpanded ? '▲ Bezár' : '📋 Terv'}
                         </button>
                       )}
 
@@ -198,7 +293,6 @@ export default function UtemtervPage() {
                   {plan && isExpanded && (
                     <div style={{ borderTop: '1px solid var(--border)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 36px)' }}>
 
-                      {/* Overview */}
                       <div style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: '14px', padding: '16px 20px', marginBottom: '20px' }}>
                         <div style={{ fontSize: '11px', color: 'var(--accent-blue)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '8px' }}>🤖 AI Összefoglaló</div>
                         <p style={{ color: 'var(--text)', fontSize: '14px', lineHeight: 1.7, marginBottom: '10px' }}>{plan.overview}</p>
@@ -208,7 +302,6 @@ export default function UtemtervPage() {
                         </div>
                       </div>
 
-                      {/* Progress */}
                       <div style={{ marginBottom: '20px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <span style={{ fontSize: '13px', color: 'var(--muted)' }}>Haladás</span>
@@ -219,7 +312,6 @@ export default function UtemtervPage() {
                         </div>
                       </div>
 
-                      {/* Napi terv */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {plan.days?.map((day, i) => {
                           const isDone = completedDays.includes(i)
@@ -227,11 +319,9 @@ export default function UtemtervPage() {
                             <div key={i} style={{
                               background: isDone ? 'rgba(45,212,160,0.06)' : 'rgba(255,255,255,0.02)',
                               border: `1px solid ${isDone ? 'rgba(45,212,160,0.25)' : 'var(--border)'}`,
-                              borderRadius: '14px', padding: '16px 20px',
-                              transition: 'all 0.2s',
+                              borderRadius: '14px', padding: '16px 20px', transition: 'all 0.2s',
                             }}>
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                                {/* Checkbox */}
                                 <div onClick={() => toggleDay(exam, i)} style={{
                                   width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
                                   background: isDone ? 'linear-gradient(135deg, #2dd4a0, #4f8eff)' : 'rgba(255,255,255,0.06)',
@@ -242,7 +332,6 @@ export default function UtemtervPage() {
                                 }}>
                                   {isDone && '✓'}
                                 </div>
-
                                 <div style={{ flex: 1 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
                                     <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '14px', color: isDone ? '#2dd4a0' : 'var(--text)' }}>
@@ -251,15 +340,11 @@ export default function UtemtervPage() {
                                     <span style={{ fontSize: '11px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: '100px' }}>⏱ {day.hours} óra</span>
                                     {isDone && <span style={{ fontSize: '11px', color: '#2dd4a0', fontWeight: 600 }}>✓ Kész!</span>}
                                   </div>
-
-                                  {/* Témák */}
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
                                     {day.topics?.map((topic, j) => (
                                       <span key={j} style={{ fontSize: '12px', color: '#2dd4a0', background: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>{topic}</span>
                                     ))}
                                   </div>
-
-                                  {/* Feladatok */}
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
                                     {day.tasks?.map((task, j) => (
                                       <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: isDone ? 'var(--muted)' : 'var(--text)', textDecoration: isDone ? 'line-through' : 'none' }}>
@@ -268,8 +353,6 @@ export default function UtemtervPage() {
                                       </div>
                                     ))}
                                   </div>
-
-                                  {/* Motiváció */}
                                   {day.motivation && (
                                     <div style={{ fontSize: '12px', color: 'var(--accent-yellow)', fontStyle: 'italic', opacity: 0.8 }}>
                                       💬 {day.motivation}
@@ -282,11 +365,15 @@ export default function UtemtervPage() {
                         })}
                       </div>
 
-                      {/* Újragenerálás */}
-                      <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+                      <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button onClick={() => generatePlan(exam)} disabled={generatingPlan === exam.id} className="btn btn-ghost" style={{ fontSize: '13px' }}>
                           {generatingPlan === exam.id ? '⏳ Generálás...' : '🔄 Terv újragenerálása'}
                         </button>
+                        {calendarConnected && (
+                          <button onClick={() => addToCalendar(exam)} disabled={addingToCalendar === exam.id} className="btn btn-ghost" style={{ fontSize: '13px', color: 'var(--accent-blue)' }}>
+                            {addingToCalendar === exam.id ? '⏳ Hozzáadás...' : '📅 Naptárba mentés'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
