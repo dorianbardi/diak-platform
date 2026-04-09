@@ -101,12 +101,14 @@ export default function JegyekPage() {
   }
 
   function neededForFive(subjectGrades) {
-    const avg = parseFloat(calcAverage(subjectGrades))
-    if (avg >= 4.5) return null
-    const totalWeight = subjectGrades.reduce((s, g) => s + g.weight, 0)
-    const needed = Math.ceil((4.5 * (totalWeight + 1) - subjectGrades.reduce((s, g) => s + g.grade * g.weight, 0)))
-    return needed
-  }
+  const avg = parseFloat(calcAverage(subjectGrades))
+  if (avg >= 4.5) return null
+  const totalWeight = subjectGrades.reduce((s, g) => s + g.weight, 0)
+  const weighted = subjectGrades.reduce((s, g) => s + g.grade * g.weight, 0)
+  const needed = Math.ceil((4.5 * (totalWeight + 1) - weighted))
+  if (needed > 5) return null // Ha nem lehetséges egy jeggyel
+  return needed
+}
 
   // Chart adat
   function getChartData() {
