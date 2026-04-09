@@ -14,6 +14,8 @@ export default function UtemtervPage() {
   const [date, setDate] = useState('')
   const [topics, setTopics] = useState('')
   const [hoursPerDay, setHoursPerDay] = useState(1)
+  const [generatingPlan, setGeneratingPlan] = useState(null)
+  const [expandedPlan, setExpandedPlan] = useState(null)
 
   useEffect(() => { if (user) fetchExams() }, [user])
 
@@ -34,27 +36,42 @@ export default function UtemtervPage() {
     await supabase.from('exams').delete().eq('id', id); fetchExams()
   }
 
+  async function generatePlan(exam) {
+    setGeneratingPlan(exam.id)
+    try {
+      const { data: cards } = await supabase.from('flashcards').select('id').eq('user_id', user.id)
+      const res = await fetch('/api/study-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examName: exam.name,
+          examDate: exam.exam_date,
+          topics: exam.topics,
+          hoursPerDay: exam.hours_per_day,
+          cardCount: cards?.length || 0,
+        }),
+      })
+      const plan = await res.json()
+      if (plan.error) { alert('Hiba: ' + plan.error); return }
+      await supabase.from('exams').update({ study_plan: plan, completed_days: [] }).eq('id', exam.id)
+      fetchExams()
+      setExpandedPlan(exam.id)
+    } catch (e) { console.error(e); alert('Váratlan hiba!') }
+    setGeneratingPlan(null)
+  }
+
+  async function toggleDay(exam, dayIndex) {
+    const completed = exam.completed_days || []
+    const newCompleted = completed.includes(dayIndex)
+      ? completed.filter(d => d !== dayIndex)
+      : [...completed, dayIndex]
+    await supabase.from('exams').update({ completed_days: newCompleted }).eq('id', exam.id)
+    fetchExams()
+  }
+
   function getDaysLeft(examDate) {
     const today = new Date(); today.setHours(0, 0, 0, 0)
     return Math.ceil((new Date(examDate) - today) / (1000 * 60 * 60 * 24))
-  }
-
-  function generateSchedule(exam) {
-    const daysLeft = getDaysLeft(exam.exam_date)
-    if (daysLeft <= 0 || exam.topics.length === 0) return []
-    const schedule = []
-    const topicsPerDay = Math.ceil(exam.topics.length / daysLeft)
-    let topicIndex = 0
-    for (let i = 0; i < Math.min(daysLeft, 7); i++) {
-      const day = new Date(); day.setDate(day.getDate() + i)
-      const dayTopics = exam.topics.slice(topicIndex, topicIndex + topicsPerDay)
-      topicIndex += topicsPerDay
-      if (dayTopics.length > 0) schedule.push({
-        date: day.toLocaleDateString('hu-HU', { weekday: 'short', month: 'short', day: 'numeric' }),
-        topics: dayTopics, isToday: i === 0,
-      })
-    }
-    return schedule
   }
 
   function getDaysLeftStyle(days) {
@@ -70,7 +87,6 @@ export default function UtemtervPage() {
 
       <div style={{ position: 'fixed', top: '18%', right: '5%', width: 'clamp(40px, 5vw, 65px)', height: 'clamp(40px, 5vw, 65px)', border: '1px solid rgba(45,212,160,0.15)', borderRadius: '14px', transform: 'rotate(15deg)', animation: 'float 7s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'fixed', bottom: '25%', left: '4%', width: 'clamp(28px, 3vw, 45px)', height: 'clamp(28px, 3vw, 45px)', border: '1px solid rgba(79,142,255,0.12)', borderRadius: '50%', animation: 'float 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', top: '50%', right: '7%', width: 0, height: 0, borderLeft: '20px solid transparent', borderRight: '20px solid transparent', borderBottom: '35px solid rgba(155,109,255,0.08)', animation: 'float 8s ease-in-out infinite 1s', pointerEvents: 'none', zIndex: 0 }} />
 
       <nav className="nav-bar">
         <div className="nav-back">
@@ -88,7 +104,7 @@ export default function UtemtervPage() {
         <div className="animate-fade-up delay-1" style={{ marginBottom: '40px' }}>
           <div className="section-label" style={{ color: '#2dd4a0' }}>✦ Vizsgák & ütemterv</div>
           <h1 className="section-title">Tanulási ütemterv</h1>
-          <p className="section-desc">Add meg a vizsgáidat — az oldal kiszámolja mikor mit kell tanulni.</p>
+          <p className="section-desc">Add meg a vizsgáidat — az AI részletes napi tervet készít!</p>
         </div>
 
         {showForm && (
@@ -123,11 +139,16 @@ export default function UtemtervPage() {
           <div className="animate-fade-up delay-2" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
             {exams.map(exam => {
               const daysLeft = getDaysLeft(exam.exam_date)
-              const schedule = generateSchedule(exam)
               const s = getDaysLeftStyle(daysLeft)
+              const plan = exam.study_plan
+              const completedDays = exam.completed_days || []
+              const isExpanded = expandedPlan === exam.id
+
               return (
                 <div key={exam.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-                  <div style={{ padding: 'clamp(20px, 2vw, 32px) clamp(20px, 3vw, 36px)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', borderBottom: schedule.length > 0 ? '1px solid var(--border)' : 'none', flexWrap: 'wrap' }}>
+
+                  {/* Vizsga fejléc */}
+                  <div style={{ padding: 'clamp(20px, 2vw, 32px) clamp(20px, 3vw, 36px)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
                       <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: 'clamp(16px, 2vw, 22px)', marginBottom: '6px' }}>{exam.name}</h2>
                       <p style={{ color: 'var(--muted)', fontSize: '13px' }}>
@@ -137,8 +158,15 @@ export default function UtemtervPage() {
                         <span style={{ margin: '0 6px', opacity: 0.3 }}>·</span>
                         {exam.hours_per_day} óra/nap
                       </p>
+                      {/* Témák */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                        {exam.topics.map((topic, i) => (
+                          <span key={i} style={{ fontSize: '12px', color: '#2dd4a0', background: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>{topic}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, flexWrap: 'wrap' }}>
                       <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '14px', padding: 'clamp(10px, 1.5vw, 16px) clamp(16px, 2vw, 24px)', textAlign: 'center' }}>
                         <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(20px, 3vw, 32px)', color: s.color, lineHeight: 1 }}>
                           {daysLeft <= 0 ? '⚠️' : daysLeft}
@@ -147,6 +175,18 @@ export default function UtemtervPage() {
                           {daysLeft <= 0 ? 'Lejárt' : 'nap'}
                         </div>
                       </div>
+
+                      {/* AI terv gomb */}
+                      {!plan ? (
+                        <button onClick={() => generatePlan(exam)} disabled={generatingPlan === exam.id} className="btn btn-primary" style={{ fontSize: '13px', padding: '10px 16px' }}>
+                          {generatingPlan === exam.id ? '⏳ Generálás...' : '🤖 AI Terv'}
+                        </button>
+                      ) : (
+                        <button onClick={() => setExpandedPlan(isExpanded ? null : exam.id)} className="btn btn-ghost" style={{ fontSize: '13px', padding: '10px 16px' }}>
+                          {isExpanded ? '▲ Bezár' : '📋 Terv megtekintése'}
+                        </button>
+                      )}
+
                       <button onClick={() => deleteExam(exam.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, transition: 'opacity 0.2s', fontSize: '16px' }}
                         onMouseEnter={e => e.currentTarget.style.opacity = 1}
                         onMouseLeave={e => e.currentTarget.style.opacity = 0.4}
@@ -154,24 +194,99 @@ export default function UtemtervPage() {
                     </div>
                   </div>
 
-                  {schedule.length > 0 && (
-                    <div style={{ padding: 'clamp(16px, 2vw, 24px) clamp(20px, 3vw, 36px)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>📋 Következő 7 nap</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {schedule.map((day, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: day.isToday ? 'rgba(79,142,255,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${day.isToday ? 'rgba(79,142,255,0.2)' : 'var(--border)'}`, borderRadius: '12px', padding: 'clamp(10px, 1.5vw, 12px) clamp(12px, 2vw, 16px)', flexWrap: 'wrap' }}>
-                            <div style={{ minWidth: '70px', fontSize: '13px', color: day.isToday ? 'var(--accent-blue)' : 'var(--muted)', fontWeight: day.isToday ? 600 : 400, flexShrink: 0 }}>
-                              {day.isToday ? '📍 Ma' : day.date}
+                  {/* AI Terv */}
+                  {plan && isExpanded && (
+                    <div style={{ borderTop: '1px solid var(--border)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 36px)' }}>
+
+                      {/* Overview */}
+                      <div style={{ background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: '14px', padding: '16px 20px', marginBottom: '20px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--accent-blue)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '8px' }}>🤖 AI Összefoglaló</div>
+                        <p style={{ color: 'var(--text)', fontSize: '14px', lineHeight: 1.7, marginBottom: '10px' }}>{plan.overview}</p>
+                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>📚 Prioritás: <strong style={{ color: 'var(--text)' }}>{plan.priority}</strong></span>
+                          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>🃏 Napi kártyák: <strong style={{ color: 'var(--accent-blue)' }}>{plan.daily_cards} db</strong></span>
+                        </div>
+                      </div>
+
+                      {/* Progress */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>Haladás</span>
+                          <span style={{ fontSize: '13px', color: 'var(--accent-green)', fontWeight: 600 }}>{completedDays.length}/{plan.days?.length || 0} nap</span>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '100px', height: '6px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: 'linear-gradient(90deg, #2dd4a0, #4f8eff)', borderRadius: '100px', width: `${plan.days?.length ? (completedDays.length / plan.days.length) * 100 : 0}%`, transition: 'width 0.4s' }} />
+                        </div>
+                      </div>
+
+                      {/* Napi terv */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {plan.days?.map((day, i) => {
+                          const isDone = completedDays.includes(i)
+                          return (
+                            <div key={i} style={{
+                              background: isDone ? 'rgba(45,212,160,0.06)' : 'rgba(255,255,255,0.02)',
+                              border: `1px solid ${isDone ? 'rgba(45,212,160,0.25)' : 'var(--border)'}`,
+                              borderRadius: '14px', padding: '16px 20px',
+                              transition: 'all 0.2s',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                                {/* Checkbox */}
+                                <div onClick={() => toggleDay(exam, i)} style={{
+                                  width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
+                                  background: isDone ? 'linear-gradient(135deg, #2dd4a0, #4f8eff)' : 'rgba(255,255,255,0.06)',
+                                  border: `2px solid ${isDone ? 'transparent' : 'rgba(255,255,255,0.15)'}`,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: '12px', transition: 'all 0.2s',
+                                  boxShadow: isDone ? '0 0 12px rgba(45,212,160,0.4)' : 'none',
+                                }}>
+                                  {isDone && '✓'}
+                                </div>
+
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '14px', color: isDone ? '#2dd4a0' : 'var(--text)' }}>
+                                      {day.day}. nap — {new Date(day.date).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' })}
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: 'var(--muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: '100px' }}>⏱ {day.hours} óra</span>
+                                    {isDone && <span style={{ fontSize: '11px', color: '#2dd4a0', fontWeight: 600 }}>✓ Kész!</span>}
+                                  </div>
+
+                                  {/* Témák */}
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                                    {day.topics?.map((topic, j) => (
+                                      <span key={j} style={{ fontSize: '12px', color: '#2dd4a0', background: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.2)', padding: '3px 10px', borderRadius: '100px' }}>{topic}</span>
+                                    ))}
+                                  </div>
+
+                                  {/* Feladatok */}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
+                                    {day.tasks?.map((task, j) => (
+                                      <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: isDone ? 'var(--muted)' : 'var(--text)', textDecoration: isDone ? 'line-through' : 'none' }}>
+                                        <span style={{ color: 'var(--accent-blue)', flexShrink: 0 }}>→</span>
+                                        {task}
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Motiváció */}
+                                  {day.motivation && (
+                                    <div style={{ fontSize: '12px', color: 'var(--accent-yellow)', fontStyle: 'italic', opacity: 0.8 }}>
+                                      💬 {day.motivation}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                              {day.topics.map((topic, j) => (
-                                <span key={j} style={{ background: 'rgba(45,212,160,0.08)', color: '#2dd4a0', border: '1px solid rgba(45,212,160,0.2)', fontSize: '12px', padding: '3px 10px', borderRadius: '100px', fontWeight: 500 }}>
-                                  {topic}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
+                      </div>
+
+                      {/* Újragenerálás */}
+                      <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+                        <button onClick={() => generatePlan(exam)} disabled={generatingPlan === exam.id} className="btn btn-ghost" style={{ fontSize: '13px' }}>
+                          {generatingPlan === exam.id ? '⏳ Generálás...' : '🔄 Terv újragenerálása'}
+                        </button>
                       </div>
                     </div>
                   )}
