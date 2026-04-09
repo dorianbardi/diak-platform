@@ -38,7 +38,6 @@ export default function Dashboard() {
       <div className="orb orb-1" /><div className="orb orb-2" />
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: `linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
 
-      {/* Lebegő alakzatok */}
       <div style={{ position: 'fixed', top: '12%', right: '6%', width: 'clamp(40px, 5vw, 70px)', height: 'clamp(40px, 5vw, 70px)', border: '1px solid rgba(79,142,255,0.15)', borderRadius: '16px', transform: 'rotate(20deg)', animation: 'float 7s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'fixed', top: '60%', right: '4%', width: 'clamp(24px, 3vw, 40px)', height: 'clamp(24px, 3vw, 40px)', border: '1px solid rgba(155,109,255,0.2)', borderRadius: '50%', animation: 'float 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'fixed', top: '30%', left: '3%', width: 'clamp(30px, 4vw, 50px)', height: 'clamp(30px, 4vw, 50px)', background: 'rgba(45,212,160,0.06)', border: '1px solid rgba(45,212,160,0.2)', transform: 'rotate(45deg)', animation: 'float 8s ease-in-out infinite 1s', pointerEvents: 'none', zIndex: 0 }} />
@@ -55,14 +54,20 @@ export default function Dashboard() {
           <div className="hide-mobile" style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 500 }}>
             <Clock />
           </div>
-          <UserButton afterSignOutUrl="/" />
+          <UserButton afterSignOutUrl="/">
+            <UserButton.MenuItems>
+              <UserButton.Link
+                label="Profilom"
+                labelIcon={<span style={{ fontSize: '14px' }}>👤</span>}
+                href="/dashboard/profile"
+              />
+            </UserButton.MenuItems>
+          </UserButton>
         </div>
       </nav>
 
-      {/* Tartalom */}
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
 
-        {/* Üdvözlés */}
         <div className="animate-fade-up delay-1" style={{ marginBottom: '48px' }}>
           <div className="section-label" style={{ color: 'var(--accent-blue)' }}>✦ Dashboard</div>
           <h1 style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(32px, 5vw, 64px)', letterSpacing: '-2px', lineHeight: 1.05, marginBottom: '12px' }}>
@@ -74,7 +79,6 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Feature kártyák */}
         <div className="animate-fade-up delay-2 grid-2">
           {features.map((f, i) => (
             <Link key={i} href={f.href} style={{ textDecoration: 'none' }}>
@@ -100,7 +104,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Tipp */}
         <div className="animate-fade-up delay-3" style={{ marginTop: 'var(--gap)', background: 'rgba(79,142,255,0.05)', border: '1px solid rgba(79,142,255,0.15)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px) clamp(20px, 3vw, 36px)', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
           <div style={{ fontSize: '24px', flexShrink: 0 }}>💡</div>
           <div>
