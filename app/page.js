@@ -182,8 +182,10 @@ export default async function Home() {
     <span className="gradient-text">Diák</span>Platform <span style={{ color: 'var(--accent-blue)' }}>✦</span>
   </div>
   <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-    <a href="/privacy" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Adatvédelmi tájékoztató</a>
-    <span style={{ color: 'var(--muted)', fontSize: '13px' }}>© 2026 — Minden jog fenntartva</span>
+    <a href="/privacy" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Adatvédelem</a>
+    <a href="/terms" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Feltételek</a>
+    <a href="/cookies" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Cookie-k</a>
+    <span style={{ color: 'var(--muted)', fontSize: '13px' }}>© 2026 — Diák Platform</span>
   </div>
 </footer>
     </div>
