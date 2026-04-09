@@ -26,7 +26,7 @@ Válaszolj CSAK JSON formátumban, semmi más szöveg nélkül, ne használj mar
   "overall_analysis": "2-3 mondatos általános értékelés",
   "predicted_average": 4.2,
   "subjects": [
-    {
+    {F
       "name": "tantárgy neve",
       "trend": "improving/declining/stable",
       "analysis": "1 mondatos elemzés",

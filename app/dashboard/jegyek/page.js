@@ -19,6 +19,7 @@ export default function JegyekPage() {
   const [analysis, setAnalysis] = useState(null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [showChart, setShowChart] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(true)
 
   useEffect(() => { if (user) fetchGrades() }, [user])
 
@@ -41,6 +42,7 @@ export default function JegyekPage() {
   async function analyzeGrades() {
     if (grades.length === 0) return
     setAnalysisLoading(true)
+    setShowAnalysis(true)
     try {
       const subjects = [...new Set(grades.map(g => g.subject))]
       const res = await fetch('/api/grade-analysis', {
@@ -101,16 +103,15 @@ export default function JegyekPage() {
   }
 
   function neededForFive(subjectGrades) {
-  const avg = parseFloat(calcAverage(subjectGrades))
-  if (avg >= 4.5) return null
-  const totalWeight = subjectGrades.reduce((s, g) => s + g.weight, 0)
-  const weighted = subjectGrades.reduce((s, g) => s + g.grade * g.weight, 0)
-  const needed = Math.ceil((4.5 * (totalWeight + 1) - weighted))
-  if (needed > 5) return null // Ha nem lehetséges egy jeggyel
-  return needed
-}
+    const avg = parseFloat(calcAverage(subjectGrades))
+    if (avg >= 4.5) return null
+    const totalWeight = subjectGrades.reduce((s, g) => s + g.weight, 0)
+    const weighted = subjectGrades.reduce((s, g) => s + g.grade * g.weight, 0)
+    const needed = Math.ceil((4.5 * (totalWeight + 1) - weighted))
+    if (needed > 5) return null
+    return needed
+  }
 
-  // Chart adat
   function getChartData() {
     const sorted = [...grades].sort((a, b) => new Date(a.date) - new Date(b.date))
     return sorted.map((g, i) => {
@@ -172,7 +173,7 @@ export default function JegyekPage() {
           </div>
         )}
 
-        {/* Chart + AI elemzés gombok */}
+        {/* Chart + AI gombok */}
         {grades.length >= 2 && (
           <div className="animate-fade-up delay-2" style={{ display: 'flex', gap: '10px', marginBottom: 'var(--gap)', flexWrap: 'wrap' }}>
             <button onClick={() => setShowChart(!showChart)} className="btn btn-ghost" style={{ fontSize: '13px' }}>
@@ -187,7 +188,13 @@ export default function JegyekPage() {
         {/* Chart */}
         {showChart && chartData.length >= 2 && (
           <div className="animate-fade-up delay-1" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)', marginBottom: 'var(--gap)' }}>
-            <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px', marginBottom: '20px' }}>📈 Átlag alakulása</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '15px' }}>📈 Átlag alakulása</h2>
+              <button onClick={() => setShowChart(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '18px', opacity: 0.5, transition: 'opacity 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
+              >✕</button>
+            </div>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={chartData}>
                 <XAxis dataKey="name" tick={{ fill: '#6b7a99', fontSize: 12 }} />
@@ -202,21 +209,24 @@ export default function JegyekPage() {
         )}
 
         {/* AI Elemzés */}
-        {analysis && (
+        {analysis && showAnalysis && (
           <div className="animate-fade-up delay-1" style={{ background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.2)', borderRadius: 'var(--radius)', padding: 'clamp(20px, 2vw, 28px)', marginBottom: 'var(--gap)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,200,66,0.15), transparent)', pointerEvents: 'none' }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '20px' }}>🤖</span>
               <h2 style={{ fontFamily: 'Geist', fontWeight: 700, fontSize: '16px' }}>AI Előrejelzés</h2>
               <span style={{ fontSize: '11px', color: '#f5c842', background: 'rgba(245,200,66,0.1)', border: '1px solid rgba(245,200,66,0.2)', padding: '2px 10px', borderRadius: '100px', fontWeight: 600 }}>
                 Előrejelzett átlag: {analysis.predicted_average}
               </span>
+              <button onClick={() => setShowAnalysis(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '18px', opacity: 0.5, transition: 'opacity 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
+              >✕</button>
             </div>
 
             <p style={{ color: 'var(--muted)', fontSize: '14px', lineHeight: 1.7, marginBottom: '16px' }}>{analysis.overall_analysis}</p>
 
-            {/* Tantárgyak */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
               {analysis.subjects?.map((s, i) => (
                 <div key={i} style={{ background: s.alert ? 'rgba(255,107,107,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${s.alert ? 'rgba(255,107,107,0.2)' : 'var(--border)'}`, borderRadius: '12px', padding: '14px 18px' }}>
@@ -233,7 +243,6 @@ export default function JegyekPage() {
               ))}
             </div>
 
-            {/* Top tipp */}
             <div style={{ background: 'rgba(79,142,255,0.06)', border: '1px solid rgba(79,142,255,0.2)', borderRadius: '12px', padding: '12px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '16px', flexShrink: 0 }}>💡</span>
               <p style={{ color: 'var(--text)', fontSize: '13px', lineHeight: 1.6 }}>{analysis.top_tip}</p>
