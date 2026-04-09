@@ -222,26 +222,25 @@ export default function DeckPage() {
       <div style={{ position: 'fixed', bottom: '25%', left: '4%', width: 'clamp(28px, 3vw, 45px)', height: 'clamp(28px, 3vw, 45px)', border: '1px solid rgba(155,109,255,0.15)', borderRadius: '50%', animation: 'float 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
 
       <nav className="nav-bar">
-        <div className="nav-back">
-          <Link href="/dashboard/flashcards">← Vissza</Link>
-          <span className="nav-divider hide-mobile">|</span>
-          <span className="nav-title hide-mobile">{deck?.name || '...'}</span>
-        </div>
-       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-  {cards.length > 0 && (
-    <Link href={`/dashboard/flashcards/${deckId}/study`} style={{ textDecoration: 'none' }}>
-      <button className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>🧠 Tanulás</button>
-    </Link>
-  )}
-  {cards.length > 0 && (
-    <Link href={`/dashboard/flashcards/${deckId}/examiner`} style={{ textDecoration: 'none' }}>
-      <button className="btn btn-primary" style={{ padding: '10px 16px', fontSize: '13px' }}>🎓 Vizsgáztatás</button>
-    </Link>
-  )}
-  <button onClick={() => { setShowForm(!showForm); setActiveTab('general') }} className="btn btn-ghost" style={{ padding: '10px 16px', fontSize: '13px' }}>+ Kártya</button>
-</div>
-        
-      </nav>
+  <div className="nav-back">
+    <Link href="/dashboard/flashcards">← Vissza</Link>
+    <span className="nav-divider hide-mobile">|</span>
+    <span className="nav-title hide-mobile">{deck?.name || '...'}</span>
+  </div>
+  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+    {cards.length > 0 && (
+      <Link href={`/dashboard/flashcards/${deckId}/study`} style={{ textDecoration: 'none' }}>
+        <button className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: '12px' }}>🧠 Tanulás</button>
+      </Link>
+    )}
+    {cards.length > 0 && (
+      <Link href={`/dashboard/flashcards/${deckId}/examiner`} style={{ textDecoration: 'none' }}>
+        <button className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '12px' }}>🎓 Vizsgáztatás</button>
+      </Link>
+    )}
+    <button onClick={() => { setShowForm(!showForm); setActiveTab('general') }} className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: '12px' }}>+ Kártya</button>
+  </div>
+</nav>
 
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: 'var(--pad-y) var(--pad-x)' }}>
 
