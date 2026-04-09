@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import ParticleCanvas from './components/ParticleCanvas'
@@ -36,17 +37,25 @@ export default async function Home() {
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: `linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
 
       {/* Navbar */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 var(--pad-x)', height: 'var(--nav-h)', background: 'rgba(8,11,20,0.85)', backdropFilter: 'blur(24px)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(16px, 3vw, 20px)' }}>
-          <span className="gradient-text">Diák</span>
-          <span style={{ color: 'var(--text)' }}>Platform</span>
-          <span style={{ color: 'var(--accent-blue)', marginLeft: '4px' }}>✦</span>
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '0 var(--pad-x)', height: 'var(--nav-h)',
+        background: 'rgba(8,11,20,0.85)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Image src="/logo_final.svg" alt="Diák Platform" width={32} height={32} style={{ borderRadius: '8px' }} />
+          <span style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: 'clamp(16px, 3vw, 20px)' }}>
+            <span className="gradient-text">Diák</span>
+            <span style={{ color: 'var(--text)' }}>Platform</span>
+            <span style={{ color: 'var(--accent-blue)', marginLeft: '4px' }}>✦</span>
+          </span>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Link href="/sign-in" className="btn btn-ghost" style={{ padding: '8px 16px', fontSize: '13px' }}>Bejelentkezés</Link>
           <Link href="/sign-up" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>Regisztráció →</Link>
         </div>
-        
       </nav>
 
       {/* Hero */}
@@ -62,8 +71,8 @@ export default async function Home() {
         </div>
 
         <h1 className="animate-fade-up delay-2" style={{ fontFamily: 'Geist', fontWeight: 800, lineHeight: 1.02, fontSize: 'clamp(36px, 8vw, 96px)', marginBottom: '24px', maxWidth: '1000px', letterSpacing: '-2px' }}>
-          Tanulj okosabban!<br />
-          <span className="gradient-text">Érd el a céljaid!</span>
+          Tanulj okosabban.<br />
+          <span className="gradient-text">Érd el a céljaid.</span>
         </h1>
 
         <p className="animate-fade-up delay-3" style={{ fontSize: 'clamp(15px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '500px', lineHeight: 1.8, marginBottom: '40px' }}>
@@ -178,16 +187,19 @@ export default async function Home() {
 
       {/* Footer */}
       <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', padding: 'clamp(20px, 2vw, 32px) var(--pad-x)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-  <div style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '18px' }}>
-    <span className="gradient-text">Diák</span>Platform <span style={{ color: 'var(--accent-blue)' }}>✦</span>
-  </div>
-  <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-    <a href="/privacy" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Adatvédelem</a>
-    <a href="/terms" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Feltételek</a>
-    <a href="/cookies" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Cookie-k</a>
-    <span style={{ color: 'var(--muted)', fontSize: '13px' }}>© 2026 — Diák Platform</span>
-  </div>
-</footer>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Image src="/logo_final.svg" alt="Diák Platform" width={28} height={28} style={{ borderRadius: '7px' }} />
+          <span style={{ fontFamily: 'Geist', fontWeight: 800, fontSize: '18px' }}>
+            <span className="gradient-text">Diák</span>Platform <span style={{ color: 'var(--accent-blue)' }}>✦</span>
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <a href="/privacy" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Adatvédelem</a>
+          <a href="/terms" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Feltételek</a>
+          <a href="/cookies" style={{ color: 'var(--muted)', fontSize: '13px', textDecoration: 'none' }}>Cookie-k</a>
+          <span style={{ color: 'var(--muted)', fontSize: '13px' }}>© 2026 — Diák Platform</span>
+        </div>
+      </footer>
     </div>
   )
 }

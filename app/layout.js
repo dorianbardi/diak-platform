@@ -32,6 +32,9 @@ export const metadata = {
     follow: true,
   },
   metadataBase: new URL('https://www.diakplatform.online'),
+  icons: {
+    icon: '/logo_final.svg',
+  },
 }
 
 export default function RootLayout({ children }) {

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f8eff"/>
+      <stop offset="100%" stop-color="#9b6dff"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1226"/>
+      <stop offset="100%" stop-color="#080b14"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="36" fill="url(#bgGrad)"/>
+  <rect x="1.5" y="1.5" width="197" height="197" rx="35" fill="none" stroke="url(#grad)" stroke-width="1.5" stroke-opacity="0.6"/>
+  <circle cx="100" cy="100" r="55" fill="url(#grad)" opacity="0.07"/>
+  <text x="100" y="132" font-family="Georgia, serif" font-weight="700" font-size="110" fill="url(#grad)" text-anchor="middle">D</text>
+  <text x="148" y="46" font-family="sans-serif" font-size="14" fill="#f5c842">✦</text>
+  <circle cx="170" cy="40" r="3" fill="#f5c842" opacity="0.6"/>
+  <circle cx="30" cy="40" r="2" fill="#4f8eff" opacity="0.4"/>
+  <circle cx="170" cy="170" r="2" fill="#9b6dff" opacity="0.4"/>
+</svg>
